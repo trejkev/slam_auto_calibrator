@@ -1,0 +1,21 @@
+<launch>
+  <arg name="Trainin_Cycles"       default="2"                                            />
+  <arg name="SLAM_Name"            default="gmapping"                                     />
+  <arg name="Robots_Quantity"      default="3"                                            />
+  <arg name="Robots_Launch_Name"   default="multi_robot_in_world.launch" />
+  <arg name="SLAM_Package_Name"    default="slam_auto_calibrator"                         />
+  <arg name="SLAM_Launch_Name"     default="slam_launcher.launch"                         />
+  <arg name="Params_Dict_Name"     default="Parameters_Robot"                             />
+
+  <param name="TrainingCycles"    type="int" value="$(arg Trainin_Cycles)"      />
+  <param name="SLAMName"          type="str" value="$(arg SLAM_Name)"           />
+  <param name="RobotsQty"         type="str" value="$(arg Robots_Quantity)"     />
+  <!-- <param name="RobotsPackageName" type="str" value="$(arg Robots_Package_Name)" /> -->
+  <param name="RobotsLauchName"   type="str" value="$(arg Robots_Launch_Name)"  />
+  <param name="SLAMPackageName"   type="str" value="$(arg SLAM_Package_Name)"   />
+  <param name="SLAMLaunchName"    type="str" value="$(arg SLAM_Launch_Name)"    />
+  <param name="ParamsDictName"    type="str" value="$(arg Params_Dict_Name)"    />
+
+  <!-- Launch SLAM auto-calibrator node -->
+  <node pkg="slam_auto_calibrator" type="slam_auto_calibrator.py" name="slam_auto_calibrator"/>
+</launch>
