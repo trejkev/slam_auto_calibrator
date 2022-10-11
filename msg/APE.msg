@@ -1,0 +1,4 @@
+string frame_id
+string datetime
+float64 translation_error_mean
+float64 rotation_error_mean
