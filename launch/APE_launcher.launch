@@ -1,0 +1,13 @@
+<launch>
+    <arg name="robot_name"                                                   />
+    <arg name="APE_Translation_Topic_Name"  default = "APETranslation"       />
+    <arg name="APE_Rotation_Topic_Name"     default = "APERotation"          />
+    <arg name="GT_Subscribed_Topic_Name"    default = "robotGTPosePublisher" />
+
+    <node pkg="slam_auto_calibrator" type="robot_APE_Publisher.py" name="robotAPEPublisher" output="screen">
+        <param name="robot_name"                 type="str" value="$(arg robot_name)"                 />
+        <param name="APE_Translation_Topic_Name" type="str" value="$(arg APE_Translation_Topic_Name)" />
+        <param name="APE_Rotation_Topic_Name"    type="str" value="$(arg APE_Rotation_Topic_Name)"    />
+        <param name="GT_Subscribed_Topic_Name"   type="str" value="$(arg GT_Subscribed_Topic_Name)"   />
+    </node>
+</launch>

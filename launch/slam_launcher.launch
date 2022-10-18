@@ -43,7 +43,7 @@
         <arg name="Velocity_Topic"         value="cmd_vel"            />
         <arg name="x_position"             value="$(arg tb3_0_x_pos)" />
         <arg name="y_position"             value="$(arg tb3_0_y_pos)" />
-        <arg name="z_rotation"             value="$(arg tb3_0_yaw)"    />
+        <arg name="z_rotation"             value="$(arg tb3_0_yaw)"   />
     </include>
   </group>
 
@@ -94,7 +94,7 @@
 
     <!-- Automatic navigation node -->
     <include file="$(find turtlebot3_nav)/launch/speed_controller.launch">
-        <arg name="Coordinates_Dictionary" value="$(arg third_tb3)"   />}
+        <arg name="Coordinates_Dictionary" value="$(arg third_tb3)"   />
         <arg name="Odometry_Topic"         value="odom"               />
         <arg name="Velocity_Topic"         value="cmd_vel"            />
         <arg name="x_position"             value="$(arg tb3_2_x_pos)" />
