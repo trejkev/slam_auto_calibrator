@@ -1,5 +1,5 @@
 <launch>
-  <arg name="Trainin_Cycles"        default="2"                           />
+  <arg name="Trainin_Cycles"        default="200"                         />
   <arg name="SLAM_Name"             default="gmapping"                    />
   <arg name="Robots_Quantity"       default="3"                           />
   <arg name="Robots_Launch_Name"    default="multi_robot_in_world.launch" />
@@ -9,6 +9,7 @@
   <arg name="APE_Topic_Name"        default="APE"                         />
   <arg name="Robots_Namespace_Base" default="tb3_"                        />
   <arg name="Ground_Truth_Filename" default="Ground_Truth_Image.png"      />
+  <arg name="Params_File_Path"      default="/home/cerlabrob/catkin_ws/src/turtlebot3/turtlebot3_slam/config/gmapping_params.yaml"/>
 
   <param name="TrainingCycles"        type="int" value="$(arg Trainin_Cycles)"        />
   <param name="SLAMName"              type="str" value="$(arg SLAM_Name)"             />
@@ -20,6 +21,7 @@
   <param name="APE_Topic_Name"        type="str" value="$(arg APE_Topic_Name)"        />
   <param name="Robots_Namespace_Base" type="str" value="$(arg Robots_Namespace_Base)" />
   <param name="Ground_Truth_Filename" type="str" value="$(arg Ground_Truth_Filename)" />
+  <param name="Params_File_Path"      type="str" value="$(arg Params_File_Path)"      />
 
   <!-- Launch SLAM auto-calibrator node -->
   <node pkg="slam_auto_calibrator" type="calibrator.py" name="calibrator"/>
