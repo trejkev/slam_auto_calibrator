@@ -8,10 +8,9 @@ import rospy, subprocess, time, os
 from datetime                 import datetime
 from slam_auto_calibrator.msg import APE
 from MapAccuracy              import MapAccuracy as MapMetric
-# from ParamsGenerator import ParamsGenerator as Params
+from ParamsGenerator import ParamsGenerator as Params
 
 rospy.init_node('slam_auto_calibrator') 
-# Params = Params()
 
 def APEReading(data):
     global RobotsNamespaceBase
@@ -43,6 +42,7 @@ APETopicName                = "APE"
 APETopicReadings            = list(range(2*iRobotsQty))
 RobotsNamespaceBase         = "tb3_"
 dParams                     = {}                                                    # Stores the algorithm parameters
+sParamsFilePath             = ""
 
 if rospy.has_param("/TrainingCycles"):
     iTrainingCycles = rospy.get_param("/TrainingCycles")                        # Number of cycles to run the AI calibration strategy
@@ -70,6 +70,8 @@ if rospy.has_param("/Robots_Namespace_Base"):
 # -- Ground truth map file name
 if rospy.has_param("/Ground_Truth_Filename"):
     GTName = rospy.get_param("/Ground_Truth_Filename")
+if rospy.has_param("/Params_File_Path"):
+    sParamsFilePath = rospy.get_param("/Params_File_Path")
 
 # -- Instance of the map error metric
 MapMetric = MapMetric()
@@ -83,8 +85,8 @@ time.sleep(2)
 subprocess.Popen("roslaunch slam_auto_calibrator {lf}".format(lf = sRobotsLauchName), shell = True)
 time.sleep(10)
 
-# -- Set the initial parameters
-# Params.setInitialParameters(dParameters = dParams)
+# -- Call the parameters generator
+Params = Params(sParamsFilePath)
     
 
 for iActualCycle in range(iTrainingCycles):
@@ -125,6 +127,7 @@ for iActualCycle in range(iTrainingCycles):
     rospy.loginfo("Robot 1 rotation error for cycle {} is: {}".format(iActualCycle, APETopicReadings[1 + iRobotsQty]))
     rospy.loginfo("Robot 2 translation error for cycle {} is: {}".format(iActualCycle, APETopicReadings[2]))
     rospy.loginfo("Robot 2 rotation error for cycle {} is: {}".format(iActualCycle, APETopicReadings[2 + iRobotsQty]))
+    Params.computeNewParameters(iMapError = fActualMapError , lPoseError = APETopicReadings)
     
     # -- Kill the SLAM algorithms and their related nodes
     nodes = os.popen("rosnode list").readlines()
