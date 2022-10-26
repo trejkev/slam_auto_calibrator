@@ -35,7 +35,7 @@ class ParamsGenerator(object):
         return self.dParams
             
     def _setParameters(self):
-        fParamsFile = open(self.sParamsPath, 'w')
+        fParamsFile = open(self.sParamsPath, 'r+')
         fParamsFile.truncate(0)                                                 # Removing all contents
         for param in list(self.dParams.keys()):
             value = self.dParams[param][0]

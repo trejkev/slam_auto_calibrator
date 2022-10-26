@@ -10,10 +10,13 @@
 # -- Step 3: Compute the metric for map error (using knn if pixels to meters conversion is well known).
 
 # from PIL import Image
+import rospy
 import cv2
 import numpy as np
 import math
 import os
+import PIL
+from PIL import Image 
 
 # from skimage import io, img_as_float
 # import matplotlib.pyplot as plt
@@ -27,10 +30,16 @@ class MapAccuracy:
         self.GTMapPath = GTMapPath
 
     def compute(self, ActualMap):
-        # -- SLAM map to BW and cropped
-        SLAMMapImage = cv2.imread(ActualMap)
-        gray_image = cv2.cvtColor(SLAMMapImage, cv2.COLOR_BGR2GRAY)
-        (thresh, SLAMMapImage) = cv2.threshold(gray_image, 125, 255, cv2.THRESH_BINARY)
+        SLAMMapImage0 = Image.open(ActualMap)
+        print(SLAMMapImage0.mode)
+        print(SLAMMapImage0.size)
+        thresh = 200
+        fn = lambda x : 255 if x > thresh else 0
+        SLAMMapImage = SLAMMapImage0.convert('L').point(fn, mode='1')
+        print(SLAMMapImage.mode)
+        print(SLAMMapImage.size)
+        SLAMMapImage = np.asarray(SLAMMapImage)
+        SLAMMapImage = (SLAMMapImage * 255).astype(np.uint8)
         lowestCol    = 0
         highestCol   = SLAMMapImage.shape[1]
         lowestRow    = 0
@@ -51,18 +60,40 @@ class MapAccuracy:
             elif np.any(SLAMMapImage[row,:] < 25) and bLowRowFound != False:
                 highestRow = row
         SLAMMapImage = SLAMMapImage[lowestRow:highestRow, lowestCol:highestCol] # Map in BW and cropped
-        GTImage = cv2.imread(self.GTMapPath)                                    # GT map
-        GTImage = cv2.cvtColor(GTImage, cv2.COLOR_BGR2GRAY)
-        tSizeScale = (GTImage.shape[1],GTImage.shape[0])
-        SLAMMapImage = cv2.resize(SLAMMapImage, tSizeScale)                     # SLAM map image resized
-        # -- Computing the map error metric as RMSE - Try using https://stackoverflow.com/questions/52576498/find-nearest-neighbor-to-each-pixel-in-a-map
+        SLAMMapImage = Image.fromarray(np.uint8(SLAMMapImage)).convert('L')
+        # SLAMMapImage.save('Prueba0.png')
+        GTImage0 = Image.open(self.GTMapPath)
+        print(GTImage0.mode)
+        thresh = 200
+        fn = lambda x : 255 if x > thresh else 0
+        GTImage = GTImage0.convert('L').point(fn, mode='1')
+        print(GTImage.mode)
+        GTImage = np.asarray(GTImage)
+        GTImage = (GTImage * 255).astype(np.uint8)
+        tSizeScale = (GTImage.shape[1], GTImage.shape[0])
+        SLAMMapImage = SLAMMapImage.resize(tSizeScale)
+        thresh = 200
+        fn = lambda x : 255 if x > thresh else 0
+        SLAMMapImage = SLAMMapImage.point(fn, mode='1')
+        SLAMMapImage = np.asarray(SLAMMapImage)
+        SLAMMapImage = (SLAMMapImage * 255).astype(np.uint8)
+        # SLAMMapImage.save('Prueba1.png')
+        # # -- Computing the map error metric as RMSE - Try using https://stackoverflow.com/questions/52576498/find-nearest-neighbor-to-each-pixel-in-a-map
         fMapError = np.sum((SLAMMapImage.astype("float") - GTImage.astype("float")) ** 2)
         fMapError /= float(SLAMMapImage.shape[0] * SLAMMapImage.shape[1])
         fMapError = math.sqrt(fMapError)
         return fMapError
-    
-# MapMetric = MapAccuracy()
-# MapMetric.setGroundTruthMap('/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/Maps/Ground_Truth_arena_entrenamiento.png')
-# error = MapMetric.compute('/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/Maps/gmapping_Trial_0_RobotsQty_3_Map_2022_10_11-11:19:49_PM.pgm')
-# print("error is {}".format(error))
-# print(os.getcwd())
+
+mmv = open(os.getcwd().replace('.ros','') + "catkin_ws/src/slam_auto_calibrator/src/MapMetricVariables.txt", "r")
+for line in mmv.readlines():
+    if "GTMapPath" in line:
+        GTMapPath = line.split("=")[1].replace("\n","")
+    elif "SLAMMapPath" in line:
+        SLAMMapPath = line.split("=")[1].replace("\n","")
+mmv.close()
+MapMetric = MapAccuracy()
+MapMetric.setGroundTruthMap(GTMapPath)
+error = MapMetric.compute(SLAMMapPath)
+mmv = open(os.getcwd().replace('.ros','') + "catkin_ws/src/slam_auto_calibrator/src/MapMetricVariables.txt", "w")
+mmv.write("MapError={}\n".format(error))
+mmv.close()

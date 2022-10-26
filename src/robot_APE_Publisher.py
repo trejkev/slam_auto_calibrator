@@ -103,9 +103,7 @@ if rospy.has_param("~GT_Subscribed_Topic_Name"):
 ################################################################################
 
 # -- Creates topics to publish APE for translation and rotation
-# robotAPETranslationPublisher = rospy.Publisher(APETranslationTopicName, ViewTemplate, queue_size=10)
-# robotAPERotationPublisher    = rospy.Publisher(APERotationTopicName   , ViewTemplate, queue_size=10)
-robotAPEPublisher    = rospy.Publisher(APETopicName, APE, queue_size=10)
+robotAPEPublisher = rospy.Publisher(APETopicName, APE, queue_size=10)
 
 # -- Subscribing to the ground truth pose publisher
 robotGTPoseListener = rospy.Subscriber(GTSubscribedTopicName, PoseStamped, GTReader)
@@ -119,18 +117,16 @@ message.frame_id = robotModelName
 while not rospy.is_shutdown():
     if bTFReadingSet == True and bGTReadingSet == True:
         message.datetime = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
+        
         # -- Computing and publishing APE mean for translation
         iXDiff = lGTPosition[0] - lTFPosition[6]
         iYDiff = lGTPosition[1] - lTFPosition[7]
         APETranslation += math.sqrt((iXDiff)**2 + (iYDiff)**2)
         message.translation_error_mean = APETranslation/iSamplesCounter
-        # message.data = APETranslation/iSamplesCounter
-        # robotAPETranslationPublisher.publish(message)
-        
         # -- Computing and publishing APE mean for rotation
         APERotation += abs(lGTPosition[2] - lTFPosition[8])
         message.rotation_error_mean = APERotation/iSamplesCounter
-        # message.data = APERotation/iSamplesCounter
+        
         robotAPEPublisher.publish(message)
         
         # -- Updating variables
