@@ -4,20 +4,20 @@
   <arg name="third_tb3"  default="tb3_2"/>
   <arg name="open_rviz"  default="true" />
 
-  <arg name="tb3_0_x_pos" default="-7.0" />
-  <arg name="tb3_0_y_pos" default="-1.0" />
-  <arg name="tb3_0_z_pos" default=" 0.0" />
-  <arg name="tb3_0_yaw"   default=" 1.57"/>
+  <arg name="tb3_0_x_pos" default="-2.5" />
+  <arg name="tb3_0_y_pos" default="3.0"  />
+  <arg name="tb3_0_z_pos" default="0.0"  />
+  <arg name="tb3_0_yaw"   default="1.57" />
 
-  <arg name="tb3_1_x_pos" default=" 7.0" />
-  <arg name="tb3_1_y_pos" default="-1.0" />
-  <arg name="tb3_1_z_pos" default=" 0.0" />
-  <arg name="tb3_1_yaw"   default=" 1.57"/>
+  <arg name="tb3_1_x_pos" default="1.0"  />
+  <arg name="tb3_1_y_pos" default="0.0"  />
+  <arg name="tb3_1_z_pos" default="0.0"  />
+  <arg name="tb3_1_yaw"   default="1.57" />
 
-  <arg name="tb3_2_x_pos" default=" 0.5"/>
-  <arg name="tb3_2_y_pos" default=" 3.0"/>
-  <arg name="tb3_2_z_pos" default=" 0.0"/>
-  <arg name="tb3_2_yaw"   default=" 0.0"/>
+  <arg name="tb3_2_x_pos" default="0.0"  />
+  <arg name="tb3_2_y_pos" default="-1.0" />
+  <arg name="tb3_2_z_pos" default="0.0"  />
+  <arg name="tb3_2_yaw"   default="0.3"  />
 
   <group ns = "$(arg first_tb3)">
     <!-- Arguments -->
@@ -45,6 +45,17 @@
         <arg name="y_position"             value="$(arg tb3_0_y_pos)" />
         <arg name="z_rotation"             value="$(arg tb3_0_yaw)"   />
     </include>
+
+    <!-- Calling the node to publish the ground truth pose of the TurtleBot3 -->
+    <include file="$(find tb3_pose_publisher)/launch/tb3_pose_publisher.launch">
+        <arg name="robot_name" value="$(arg first_tb3)"/>
+    </include>
+
+    <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
+    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
+        <arg name="robot_name" value="$(arg first_tb3)"/>
+    </include>
+
   </group>
 
   <group ns = "$(arg second_tb3)">
@@ -73,6 +84,17 @@
         <arg name="y_position"             value="$(arg tb3_1_y_pos)" />
         <arg name="z_rotation"             value="$(arg tb3_1_yaw)"   />
     </include>
+
+    <!-- Calling the node to publish the ground truth pose of the TurtleBot3 -->
+    <include file="$(find tb3_pose_publisher)/launch/tb3_pose_publisher.launch">
+        <arg name="robot_name" value="$(arg second_tb3)"/>
+    </include>
+
+    <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
+    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
+        <arg name="robot_name" value="$(arg second_tb3)"/>
+    </include>
+
   </group>
 
   <group ns = "$(arg third_tb3)">
@@ -101,6 +123,17 @@
         <arg name="y_position"             value="$(arg tb3_2_y_pos)" />
         <arg name="z_rotation"             value="$(arg tb3_2_yaw)"   />
     </include>
+
+    <!-- Calling the node to publish the ground truth pose of the TurtleBot3 -->
+    <include file="$(find tb3_pose_publisher)/launch/tb3_pose_publisher.launch">
+        <arg name="robot_name" value="$(arg third_tb3)"/>
+    </include>
+
+    <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
+    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
+        <arg name="robot_name" value="$(arg third_tb3)"/>
+    </include>
+
   </group>
 
   <include file="$(find turtlebot3_gazebo)/launch/multi_map_merge.launch"></include>

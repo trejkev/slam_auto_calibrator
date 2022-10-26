@@ -19,20 +19,20 @@
   <arg name="tb3_2_z_pos" default=" 0.0"/>
   <arg name="tb3_2_yaw"   default=" 0.0"/> -->
 
-  <arg name="tb3_0_x_pos" default="-2.5"  />
-  <arg name="tb3_0_y_pos" default="3.0"   />
-  <arg name="tb3_0_z_pos" default=" 0.0"  />
-  <arg name="tb3_0_yaw"   default=" 1.57" />
+  <arg name="tb3_0_x_pos" default="-2.5" />
+  <arg name="tb3_0_y_pos" default="3.0"  />
+  <arg name="tb3_0_z_pos" default="0.0"  />
+  <arg name="tb3_0_yaw"   default="1.57" />
 
-  <arg name="tb3_1_x_pos" default=" 1.0"  />
-  <arg name="tb3_1_y_pos" default="0.0"   />
-  <arg name="tb3_1_z_pos" default=" 0.0"  />
-  <arg name="tb3_1_yaw"   default=" 1.57" />
+  <arg name="tb3_1_x_pos" default="1.0"  />
+  <arg name="tb3_1_y_pos" default="0.0"  />
+  <arg name="tb3_1_z_pos" default="0.0"  />
+  <arg name="tb3_1_yaw"   default="1.57" />
 
-  <arg name="tb3_2_x_pos" default=" 0.0"  />
-  <arg name="tb3_2_y_pos" default=" -1.0" />
-  <arg name="tb3_2_z_pos" default=" 0.0"  />
-  <arg name="tb3_2_yaw"   default=" 0.0"  />
+  <arg name="tb3_2_x_pos" default="0.0"  />
+  <arg name="tb3_2_y_pos" default="-1.0" />
+  <arg name="tb3_2_z_pos" default="0.0"  />
+  <arg name="tb3_2_yaw"   default="0.3"  />
 
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
     <!-- <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_house.world"/> -->
@@ -54,16 +54,6 @@
 
     <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg first_tb3) -x $(arg tb3_0_x_pos) -y $(arg tb3_0_y_pos) -z $(arg tb3_0_z_pos) -Y $(arg tb3_0_yaw) -param robot_description" />
   
-    <!-- Calling the node to publish the ground truth pose of the TurtleBot3 -->
-    <include file="$(find tb3_pose_publisher)/launch/tb3_pose_publisher.launch">
-        <arg name="robot_name" value="$(arg first_tb3)"/>
-    </include>
-
-    <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
-    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
-        <arg name="robot_name" value="$(arg first_tb3)"/>
-    </include>
-
   </group>
 
   <group ns = "$(arg second_tb3)">
@@ -75,17 +65,7 @@
     </node>
 
     <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg second_tb3) -x $(arg tb3_1_x_pos) -y $(arg tb3_1_y_pos) -z $(arg tb3_1_z_pos) -Y $(arg tb3_1_yaw) -param robot_description" />
-  
-    <!-- Calling the node to publish the ground truth pose of the TurtleBot3 -->
-    <include file="$(find tb3_pose_publisher)/launch/tb3_pose_publisher.launch">
-        <arg name="robot_name" value="$(arg second_tb3)"/>
-    </include>
-
-    <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
-    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
-        <arg name="robot_name" value="$(arg second_tb3)"/>
-    </include>
-  
+    
   </group>
 
   <group ns = "$(arg third_tb3)">
@@ -97,16 +77,6 @@
     </node>
 
     <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-urdf -model $(arg third_tb3) -x $(arg tb3_2_x_pos) -y $(arg tb3_2_y_pos) -z $(arg tb3_2_z_pos) -Y $(arg tb3_2_yaw) -param robot_description" />
-  
-    <!-- Calling the node to publish the ground truth pose of the TurtleBot3 -->
-    <include file="$(find tb3_pose_publisher)/launch/tb3_pose_publisher.launch">
-        <arg name="robot_name" value="$(arg third_tb3)"/>
-    </include>
-
-    <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
-    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
-        <arg name="robot_name" value="$(arg third_tb3)"/>
-    </include>
   
   </group>
 
