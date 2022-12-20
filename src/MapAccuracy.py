@@ -17,6 +17,7 @@ import math
 import os
 import PIL
 from PIL import Image 
+Image.MAX_IMAGE_PIXELS = 60000000*60000000
 
 # from skimage import io, img_as_float
 # import matplotlib.pyplot as plt
@@ -30,16 +31,23 @@ class MapAccuracy:
         self.GTMapPath = GTMapPath
 
     def compute(self, ActualMap):
-        SLAMMapImage0 = Image.open(ActualMap)
-        print(SLAMMapImage0.mode)
-        print(SLAMMapImage0.size)
-        thresh = 200
-        fn = lambda x : 255 if x > thresh else 0
-        SLAMMapImage = SLAMMapImage0.convert('L').point(fn, mode='1')
-        print(SLAMMapImage.mode)
-        print(SLAMMapImage.size)
+        # SLAMMapImage0 = Image.open(ActualMap)
+        # print(SLAMMapImage0.mode)
+        # print(SLAMMapImage0.size)
+        # thresh = 200
+        # fn = lambda x : 255 if x > thresh else 0
+        # SLAMMapImage = SLAMMapImage0.convert('L').point(fn, mode='1')
+        # print(SLAMMapImage.mode)
+        # print(SLAMMapImage.size)
+        
+        SLAMMapImage = cv2.imread(ActualMap, cv2.IMREAD_GRAYSCALE)
+        # SLAMMapImage = cv2.cvtColor(SLAMMapImage, cv2.COLOR_BGR2GRAY)
+        SLAMMapImage = cv2.threshold(SLAMMapImage, 200, 255, cv2.THRESH_BINARY)[1]
+        # cv2.imwrite("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapResultCV2b4crop.png", SLAMMapImage)
+
+        
         SLAMMapImage = np.asarray(SLAMMapImage)
-        SLAMMapImage = (SLAMMapImage * 255).astype(np.uint8)
+        # SLAMMapImage = (SLAMMapImage * 255).astype(np.uint8)
         lowestCol    = 0
         highestCol   = SLAMMapImage.shape[1]
         lowestRow    = 0
@@ -60,7 +68,9 @@ class MapAccuracy:
             elif np.any(SLAMMapImage[row,:] < 25) and bLowRowFound != False:
                 highestRow = row
         SLAMMapImage = SLAMMapImage[lowestRow:highestRow, lowestCol:highestCol] # Map in BW and cropped
-        SLAMMapImage = Image.fromarray(np.uint8(SLAMMapImage)).convert('L')
+        
+        # cv2.imwrite("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapResultCV2aftercropb4scale.png", SLAMMapImage)
+        # SLAMMapImage = Image.fromarray(np.uint8(SLAMMapImage)).convert('L')
         # SLAMMapImage.save('Prueba0.png')
         GTImage0 = Image.open(self.GTMapPath)
         print(GTImage0.mode)
@@ -71,20 +81,22 @@ class MapAccuracy:
         GTImage = np.asarray(GTImage)
         GTImage = (GTImage * 255).astype(np.uint8)
         tSizeScale = (GTImage.shape[1], GTImage.shape[0])
-        SLAMMapImage = SLAMMapImage.resize(tSizeScale)
-        thresh = 200
-        fn = lambda x : 255 if x > thresh else 0
-        SLAMMapImage = SLAMMapImage.point(fn, mode='1')
-        SLAMMapImage = np.asarray(SLAMMapImage)
-        SLAMMapImage = (SLAMMapImage * 255).astype(np.uint8)
+        # SLAMMapImage = SLAMMapImage.resize(tSizeScale)
+        # thresh = 200
+        # fn = lambda x : 255 if x > thresh else 0
+        # SLAMMapImage = SLAMMapImage.point(fn, mode='1')
+        # SLAMMapImage = np.asarray(SLAMMapImage)
+        # SLAMMapImage = (SLAMMapImage * 255).astype(np.uint8)
         # SLAMMapImage.save('Prueba1.png')
+        SLAMMapImage = cv2.resize(SLAMMapImage, tSizeScale)
+        # cv2.imwrite("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapResultCV2aftercropafterscale.png", SLAMMapImage)
         # # -- Computing the map error metric as RMSE - Try using https://stackoverflow.com/questions/52576498/find-nearest-neighbor-to-each-pixel-in-a-map
         fMapError = np.sum((SLAMMapImage.astype("float") - GTImage.astype("float")) ** 2)
         fMapError /= float(SLAMMapImage.shape[0] * SLAMMapImage.shape[1])
         fMapError = math.sqrt(fMapError)
         return fMapError
 
-mmv = open(os.getcwd().replace('.ros','') + "catkin_ws/src/slam_auto_calibrator/src/MapMetricVariables.txt", "r")
+mmv = open("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapMetricVariables.txt", "r")
 for line in mmv.readlines():
     if "GTMapPath" in line:
         GTMapPath = line.split("=")[1].replace("\n","")
@@ -94,6 +106,6 @@ mmv.close()
 MapMetric = MapAccuracy()
 MapMetric.setGroundTruthMap(GTMapPath)
 error = MapMetric.compute(SLAMMapPath)
-mmv = open(os.getcwd().replace('.ros','') + "catkin_ws/src/slam_auto_calibrator/src/MapMetricVariables.txt", "w")
+mmv = open("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapMetricVariables.txt", "w")
 mmv.write("MapError={}\n".format(error))
 mmv.close()
