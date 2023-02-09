@@ -230,6 +230,14 @@ class Calibrator(object):
         rospy.loginfo(best)
         rospy.loginfo("---- BEST SETUP IS ----")
     
+    
+    
+    ############################################################################
+    ############################################################################
+    # --        Validation methods, not part of the functional code         -- #
+    ############################################################################
+    ############################################################################
+    
     def validationTrials(self, iTrialsQty = 30):
         # -- Run optimized params
         rospy.loginfo("OPTIMIZED PARAMS RUNS")
@@ -282,7 +290,79 @@ class Calibrator(object):
         for trial in range(iTrialsQty):
             self.CycleRunner()
     
-    
+    def OptReviewTrialsVer2(self, iTrialsQty = 16):
+        rospy.loginfo("200 TIMES PARAMS RUNS")
+        self.dParams.update({'lasamplestep': [0.003007914478503184, self.dParams['lasamplestep'][1], self.dParams['lasamplestep'][2], self.dParams['lasamplestep'][3]]})
+        self.dParams.update({'lasamplerange': [0.0038359543315193536, self.dParams['lasamplerange'][1], self.dParams['lasamplerange'][2], self.dParams['lasamplerange'][3]]})
+        self.dParams.update({'llsamplestep': [0.013637398940780539, self.dParams['llsamplestep'][1], self.dParams['llsamplestep'][2], self.dParams['llsamplestep'][3]]})
+        self.dParams.update({'lstep': [0.06965953136587595, self.dParams['lstep'][1], self.dParams['lstep'][2], self.dParams['lstep'][3]]})
+        self.dParams.update({'llsamplerange': [0.0052006405330092065, self.dParams['llsamplerange'][1], self.dParams['llsamplerange'][2], self.dParams['llsamplerange'][3]]})
+        self.dParams.update({'map_update_interval': [4.553564036658955, self.dParams['map_update_interval'][1], self.dParams['map_update_interval'][2], self.dParams['map_update_interval'][3]]})
+        self.dParams.update({'lsigma': [0.07979527539202991, self.dParams['lsigma'][1], self.dParams['lsigma'][2], self.dParams['lsigma'][3]]})
+        self.dParams.update({'astep': [0.03295152841339962, self.dParams['astep'][1], self.dParams['astep'][2], self.dParams['astep'][3]]})
+        self.dParams.update({'particles': [16, self.dParams['particles'][1], self.dParams['particles'][2], self.dParams['particles'][3]]})
+        self.dParams.update({'throttle_scans': [4, self.dParams['throttle_scans'][1], self.dParams['throttle_scans'][2], self.dParams['throttle_scans'][3]]}) 
+        self.dParams.update({'angularUpdate': [0.6252325042386583, self.dParams['angularUpdate'][1], self.dParams['angularUpdate'][2], self.dParams['angularUpdate'][3]]})
+        self.dParams.update({'maxUrange': [73.72032793849412, self.dParams['maxUrange'][1], self.dParams['maxUrange'][2], self.dParams['maxUrange'][3]]})
+        self.dParams.update({'linearUpdate': [0.9440511343184271, self.dParams['linearUpdate'][1], self.dParams['linearUpdate'][2], self.dParams['linearUpdate'][3]]})
+        self.dParams.update({'iterations': [3, self.dParams['iterations'][1], self.dParams['iterations'][2], self.dParams['iterations'][3]]})
+        self.dParams.update({'ogain': [2.089006392255016, self.dParams['ogain'][1], self.dParams['ogain'][2], self.dParams['ogain'][3]]})
+        self.dParams.update({'delta': [0.030090086346347418, self.dParams['delta'][1], self.dParams['delta'][2], self.dParams['delta'][3]]})
+        self.dParams.update({'resampleThreshold': [0.5491136438232976, self.dParams['resampleThreshold'][1], self.dParams['resampleThreshold'][2], self.dParams['resampleThreshold'][3]]})
+        self.dParams.update({'sigma': [0.058313499281896795, self.dParams['sigma'][1], self.dParams['sigma'][2], self.dParams['sigma'][3]]})
+        self.dParams.update({'minimumScore': [1.5826387504423072, self.dParams['minimumScore'][1], self.dParams['minimumScore'][2], self.dParams['minimumScore'][3]]})
+        rospy.loginfo(self.dParams)
+        self.setParamsOnYaml()
+        for trial in range(iTrialsQty):
+            self.CycleRunner()
+        rospy.loginfo("100 TIMES PARAMS RUNS")
+        self.dParams.update({'lasamplestep': [0.003632033648581685, self.dParams['lasamplestep'][1], self.dParams['lasamplestep'][2], self.dParams['lasamplestep'][3]]})
+        self.dParams.update({'lasamplerange': [0.005872984205421812, self.dParams['lasamplerange'][1], self.dParams['lasamplerange'][2], self.dParams['lasamplerange'][3]]})
+        self.dParams.update({'llsamplestep': [0.007359893813202421, self.dParams['llsamplestep'][1], self.dParams['llsamplestep'][2], self.dParams['llsamplestep'][3]]})
+        self.dParams.update({'lstep': [0.05226470938753834, self.dParams['lstep'][1], self.dParams['lstep'][2], self.dParams['lstep'][3]]})
+        self.dParams.update({'llsamplerange': [0.009401480413120054, self.dParams['llsamplerange'][1], self.dParams['llsamplerange'][2], self.dParams['llsamplerange'][3]]})
+        self.dParams.update({'map_update_interval': [1.869112578756949, self.dParams['map_update_interval'][1], self.dParams['map_update_interval'][2], self.dParams['map_update_interval'][3]]})
+        self.dParams.update({'lsigma': [0.08156101216303907, self.dParams['lsigma'][1], self.dParams['lsigma'][2], self.dParams['lsigma'][3]]})
+        self.dParams.update({'astep': [0.03921716395615649, self.dParams['astep'][1], self.dParams['astep'][2], self.dParams['astep'][3]]})
+        self.dParams.update({'particles': [4, self.dParams['particles'][1], self.dParams['particles'][2], self.dParams['particles'][3]]})
+        self.dParams.update({'throttle_scans': [1, self.dParams['throttle_scans'][1], self.dParams['throttle_scans'][2], self.dParams['throttle_scans'][3]]}) 
+        self.dParams.update({'angularUpdate': [0.5391493636343758, self.dParams['angularUpdate'][1], self.dParams['angularUpdate'][2], self.dParams['angularUpdate'][3]]})
+        self.dParams.update({'maxUrange': [76.51319240518663, self.dParams['maxUrange'][1], self.dParams['maxUrange'][2], self.dParams['maxUrange'][3]]})
+        self.dParams.update({'linearUpdate': [1.495146418510496, self.dParams['linearUpdate'][1], self.dParams['linearUpdate'][2], self.dParams['linearUpdate'][3]]})
+        self.dParams.update({'iterations': [2, self.dParams['iterations'][1], self.dParams['iterations'][2], self.dParams['iterations'][3]]})
+        self.dParams.update({'ogain': [3.436491254492076, self.dParams['ogain'][1], self.dParams['ogain'][2], self.dParams['ogain'][3]]})
+        self.dParams.update({'delta': [0.03000843009132362, self.dParams['delta'][1], self.dParams['delta'][2], self.dParams['delta'][3]]})
+        self.dParams.update({'resampleThreshold': [0.5889282445232121, self.dParams['resampleThreshold'][1], self.dParams['resampleThreshold'][2], self.dParams['resampleThreshold'][3]]})
+        self.dParams.update({'sigma': [0.06874326008678544, self.dParams['sigma'][1], self.dParams['sigma'][2], self.dParams['sigma'][3]]})
+        self.dParams.update({'minimumScore': [3.283669648172889, self.dParams['minimumScore'][1], self.dParams['minimumScore'][2], self.dParams['minimumScore'][3]]})
+        rospy.loginfo(self.dParams)
+        self.setParamsOnYaml()
+        for trial in range(iTrialsQty):
+            self.CycleRunner()
+        rospy.loginfo("10 TIMES PARAMS RUNS")
+        self.dParams.update({'lasamplestep': [0.005970996960046699, self.dParams['lasamplestep'][1], self.dParams['lasamplestep'][2], self.dParams['lasamplestep'][3]]})
+        self.dParams.update({'lasamplerange': [0.0040029166972444, self.dParams['lasamplerange'][1], self.dParams['lasamplerange'][2], self.dParams['lasamplerange'][3]]})
+        self.dParams.update({'llsamplestep': [0.04387652788786439, self.dParams['llsamplestep'][1], self.dParams['llsamplestep'][2], self.dParams['llsamplestep'][3]]})
+        self.dParams.update({'lstep': [0.05556745260775601, self.dParams['lstep'][1], self.dParams['lstep'][2], self.dParams['lstep'][3]]})
+        self.dParams.update({'llsamplerange': [0.03303935015706494, self.dParams['llsamplerange'][1], self.dParams['llsamplerange'][2], self.dParams['llsamplerange'][3]]})
+        self.dParams.update({'map_update_interval': [2.8588357060331093, self.dParams['map_update_interval'][1], self.dParams['map_update_interval'][2], self.dParams['map_update_interval'][3]]})
+        self.dParams.update({'lsigma': [0.05980455258486999, self.dParams['lsigma'][1], self.dParams['lsigma'][2], self.dParams['lsigma'][3]]})
+        self.dParams.update({'astep': [0.03457222951002627, self.dParams['astep'][1], self.dParams['astep'][2], self.dParams['astep'][3]]})
+        self.dParams.update({'particles': [21, self.dParams['particles'][1], self.dParams['particles'][2], self.dParams['particles'][3]]})
+        self.dParams.update({'throttle_scans': [1, self.dParams['throttle_scans'][1], self.dParams['throttle_scans'][2], self.dParams['throttle_scans'][3]]}) 
+        self.dParams.update({'angularUpdate': [0.3420335148163475, self.dParams['angularUpdate'][1], self.dParams['angularUpdate'][2], self.dParams['angularUpdate'][3]]})
+        self.dParams.update({'maxUrange': [87.28132830734856, self.dParams['maxUrange'][1], self.dParams['maxUrange'][2], self.dParams['maxUrange'][3]]})
+        self.dParams.update({'linearUpdate': [0.9099934746437636, self.dParams['linearUpdate'][1], self.dParams['linearUpdate'][2], self.dParams['linearUpdate'][3]]})
+        self.dParams.update({'iterations': [6, self.dParams['iterations'][1], self.dParams['iterations'][2], self.dParams['iterations'][3]]})
+        self.dParams.update({'ogain': [1.1128626504367944, self.dParams['ogain'][1], self.dParams['ogain'][2], self.dParams['ogain'][3]]})
+        self.dParams.update({'delta': [0.031450137974610444, self.dParams['delta'][1], self.dParams['delta'][2], self.dParams['delta'][3]]})
+        self.dParams.update({'resampleThreshold': [0.5735065430677528, self.dParams['resampleThreshold'][1], self.dParams['resampleThreshold'][2], self.dParams['resampleThreshold'][3]]})
+        self.dParams.update({'sigma': [0.03462754633865353, self.dParams['sigma'][1], self.dParams['sigma'][2], self.dParams['sigma'][3]]})
+        self.dParams.update({'minimumScore': [2.332935277784088, self.dParams['minimumScore'][1], self.dParams['minimumScore'][2], self.dParams['minimumScore'][3]]})
+        rospy.loginfo(self.dParams)
+        self.setParamsOnYaml()
+        for trial in range(iTrialsQty):
+            self.CycleRunner()
     
     def OptComparisonTrials(self, iTrialsQty = 16):
         rospy.loginfo("200 TIMES PARAMS RUNS")
@@ -361,6 +441,7 @@ class Calibrator(object):
 
 calibrator = Calibrator()
 calibrator.paramsOptimizer()
+# calibrator.OptReviewTrialsVer2()
 # calibrator.validationTrials()
 # calibrator.OptComparisonTrials()
 
