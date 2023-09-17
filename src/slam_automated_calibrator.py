@@ -100,9 +100,7 @@ class Calibrator(object):
                 param   = line.split(":")[0]
                 typeVar = line.split("#")[1].replace(" ", "")
                 value   = (
-                    line.split(":")[1]
-                    .replace(" ", "")
-                    .split("#")[0]
+                    line.split(":")[1].replace(" ", "").split("#")[0]
                 )
                 minVal = (
                     line.split("#")[2]
@@ -142,12 +140,7 @@ class Calibrator(object):
             maxVal  = self.dParams[param][3]
             fParamsFile.write(
                 "{}: {} #{} #min={} #max={}\n"
-                .format(param,
-                        value,
-                        typeVar,
-                        minVal,
-                        maxVal
-                )
+                .format(param, value, typeVar, minVal, maxVal)
             )
         fParamsFile.close()
 
@@ -260,8 +253,7 @@ class Calibrator(object):
         # --- Running the error calculator
         self.sMapMetricFile = "{}MapAccuracy.py".format(self.sSourcePath)
         process = subprocess.Popen(
-            "'{}'".format(self.sMapMetricFile),
-            shell = True
+            "'{}'".format(self.sMapMetricFile), shell = True
         )
         process.wait()
 
@@ -317,11 +309,7 @@ class Calibrator(object):
         # -- Launch the SLAM algorithms and the automatic navigator
         subprocess.Popen(
             "roslaunch {} {}"
-            .format(
-                self.sSelfPackageName,
-                self.sSLAMLaunchName
-            ),
-            shell = True
+            .format(self.sSelfPackageName, self.sSLAMLaunchName), shell = True
         )
         time.sleep(10)
         for iRobot in range(self.iRobotsQty):
@@ -342,8 +330,7 @@ class Calibrator(object):
         rospy.loginfo("Completed lap {}".format(self.iActualCycle))  
         sCurrDate = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
         rospy.loginfo(
-            "Running map generator for cycle {}"
-            .format(self.iActualCycle)
+            "Running map generator for cycle {}".format(self.iActualCycle)
         )
         self.SLAMMapGenerator()                                                 # Generate the SLAM map as pgm image
         sCurrDate = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
@@ -354,8 +341,7 @@ class Calibrator(object):
         self.MapMetricComputation()                                             # Call an external script to compute the map metric
         sCurrDate = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
         rospy.loginfo(
-            "Running errors recorder for cycle {}"
-            .format(self.iActualCycle)
+            "Running errors recorder for cycle {}".format(self.iActualCycle)
         )
         self.ErrorsRecorder()                                                   # Record the errors into log files
         self.NonGazeboNodesKiller()
@@ -394,8 +380,7 @@ class Calibrator(object):
     def paramsValidator(self, iTrialsQty):
         # -- Run optimized params iTrialsQty times
         rospy.loginfo(
-            "Running with optimized parameters {} times"
-            .format(iTrialsQty)
+            "Running with optimized parameters {} times".format(iTrialsQty)
         )
         self.getParamsFromYaml()
         rospy.loginfo(self.dParams)
