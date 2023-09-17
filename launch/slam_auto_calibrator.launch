@@ -1,4 +1,5 @@
 <launch>
+  <!-- General arguments -->
   <arg name="Trainin_Cycles"        default="2"                           />
   <arg name="SLAM_Name"             default="gmapping"                    />
   <arg name="Robots_Quantity"       default="3"                           />
