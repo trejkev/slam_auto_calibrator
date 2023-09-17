@@ -1,5 +1,5 @@
 <launch>
-  <arg name="Trainin_Cycles"        default="3"                           />
+  <arg name="Trainin_Cycles"        default="2"                           />
   <arg name="SLAM_Name"             default="gmapping"                    />
   <arg name="Robots_Quantity"       default="3"                           />
   <arg name="Robots_Launch_Name"    default="multi_robot_in_world.launch" />
@@ -33,5 +33,5 @@
   <param name="ParamsFilePath"        type="str" value="$(arg Params_File_Path)"      />
 
   <!-- Launch SLAM auto-calibrator node -->
-  <node pkg="slam_auto_calibrator" type="calibrator.py" name="slam_auto_calibrator"/>
+  <node pkg="slam_auto_calibrator" type="slam_automated_calibrator.py" name="slam_auto_calibrator"/>
 </launch>
