@@ -54,29 +54,29 @@ class Calibrator(object):
 
 
     def read_launch_params(self):
-        if rospy.has_param("/TrainingCycles"       ):
+        if rospy.has_param("/TrainingCycles"     ):
             self.iTrainingCycles     = rospy.get_param("/TrainingCycles"     )
-        if rospy.has_param("/SLAMName"             ):
+        if rospy.has_param("/SLAMName"           ):
             self.sSLAMName           = rospy.get_param("/SLAMName"           )
-        if rospy.has_param("/RobotsQty"            ):
+        if rospy.has_param("/RobotsQty"          ):
             self.iRobotsQty          = rospy.get_param("/RobotsQty"          )
-        if rospy.has_param("/RobotsLauchName"      ):
+        if rospy.has_param("/RobotsLauchName"    ):
             self.sRobotsLauchName    = rospy.get_param("/RobotsLauchName"    )  # Launch file where robots and world description are
-        if rospy.has_param("/SelfPackageName"      ):
+        if rospy.has_param("/SelfPackageName"    ):
             self.sSelfPackageName    = rospy.get_param("/SelfPackageName"    )  # Launch file where SLAM, map merger, and rviz are called
-        if rospy.has_param("/SLAMLaunchName"       ):
+        if rospy.has_param("/SLAMLaunchName"     ):
             self.sSLAMLaunchName     = rospy.get_param("/SLAMLaunchName"     )
-        if rospy.has_param("/APETopicName"         ):
+        if rospy.has_param("/APETopicName"       ):
             self.APETopicName        = rospy.get_param("/APETopicName"       )  # Publisher topic for traslation and rotation APE mean
-        if rospy.has_param("/RobotsNamespaceBase"  ):
+        if rospy.has_param("/RobotsNamespaceBase"):
             self.RobotsNamespaceBase = rospy.get_param("/RobotsNamespaceBase")  # Prefix for robots
-        if rospy.has_param("/GroundTruthFilename"  ):
+        if rospy.has_param("/GroundTruthFilename"):
             self.GTName              = rospy.get_param("/GroundTruthFilename")
-        if rospy.has_param("/ThisNodeSrcPath"      ):
+        if rospy.has_param("/ThisNodeSrcPath"    ):
             self.sSourcePath         = rospy.get_param("/ThisNodeSrcPath"    )
-        if rospy.has_param("/MapsPath"             ):
+        if rospy.has_param("/MapsPath"           ):
             self.GTpath              = rospy.get_param("/MapsPath"           )
-        if rospy.has_param("/ParamsFilePath"       ):
+        if rospy.has_param("/ParamsFilePath"     ):
             self.sParamsFilePath     = rospy.get_param("/ParamsFilePath"     )  # SLAM params file location
 
 
