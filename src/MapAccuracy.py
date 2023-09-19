@@ -1,111 +1,144 @@
 #!/usr/bin/env python
-# Copyright 2022 Kevin Trejos Vargas <kevin.trejosvargas@ucr.ac.cr>
 
-# -- Imports
+__author__ = "Kevin Trejos Vargas"
+__email__  = "kevin.trejosvargas@ucr.ac.cr"
 
-# -- Step 1: Rotate the generated map to the same orientation of the Ground Truth.
-# -- Step 2: Try to match, using a correlation study, looking for a correlation beyond 95% (empirical guess).
-# -- Step 2.1: If the correlation is not met, move the image along the ground truth looking for condition to be met.
-# -- Clue: Starting with a kind of coarse search may be a good idea, or using a pattern recognition algorithm.
-# -- Step 3: Compute the metric for map error (using knn if pixels to meters conversion is well known).
+"""
+MIT License
 
-# from PIL import Image
-import rospy
-import cv2
+Copyright (c) 2022-2023 Kevin Trejos Vargas
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+"""
+
+import rospy, cv2, math, os, PIL
 import numpy as np
-import math
-import os
-import PIL
 from PIL import Image 
-Image.MAX_IMAGE_PIXELS = 60000000*60000000
 
-# from skimage import io, img_as_float
-# import matplotlib.pyplot as plt
-# import numpy as np
+Image.MAX_IMAGE_PIXELS = 60000000*60000000
 
 class MapAccuracy:
     def __init__(self):
-        self.GTMapPath = ''
+        self.GTMapImage = ''
 
-    def setGroundTruthMap(self, GTMapPath):
-        self.GTMapPath = GTMapPath
-
-    def compute(self, ActualMap):
-        # SLAMMapImage0 = Image.open(ActualMap)
-        # print(SLAMMapImage0.mode)
-        # print(SLAMMapImage0.size)
-        # thresh = 200
-        # fn = lambda x : 255 if x > thresh else 0
-        # SLAMMapImage = SLAMMapImage0.convert('L').point(fn, mode='1')
-        # print(SLAMMapImage.mode)
-        # print(SLAMMapImage.size)
+    def set_ground_truth_map(self, GTMapPath):
+        self.GTMapImage = GTMapPath
+    
+    def set_slam_generated_map(self, SLAMMapPath):
+        self.SLAMMapImage = SLAMMapPath
         
-        SLAMMapImage = cv2.imread(ActualMap, cv2.IMREAD_GRAYSCALE)
-        # SLAMMapImage = cv2.cvtColor(SLAMMapImage, cv2.COLOR_BGR2GRAY)
-        SLAMMapImage = cv2.threshold(SLAMMapImage, 200, 255, cv2.THRESH_BINARY)[1]
-        # cv2.imwrite("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapResultCV2b4crop.png", SLAMMapImage)
+    def pre_process_slam_generated_map(self):
+        # -- Reading the SLAM-generated map as black and white
+        self.SLAMMapImage = cv2.imread(self.SLAMMapImage, cv2.IMREAD_GRAYSCALE)
+        self.SLAMMapImage = (
+            cv2.threshold(self.SLAMMapImage, 200, 255, cv2.THRESH_BINARY)[1]
+        )
 
-        
-        SLAMMapImage = np.asarray(SLAMMapImage)
-        # SLAMMapImage = (SLAMMapImage * 255).astype(np.uint8)
-        lowestCol    = 0
-        highestCol   = SLAMMapImage.shape[1]
-        lowestRow    = 0
-        highestRow   = SLAMMapImage.shape[0]
-        bLowColFound = False
-        bLowRowFound = False
+        # -- Converting the image to a binary array
+        self.SLAMMapImage = np.asarray(self.SLAMMapImage)
+        lowestCol         = 0
+        highestCol        = self.SLAMMapImage.shape[1]
+        lowestRow         = 0
+        highestRow        = self.SLAMMapImage.shape[0]
+        bLowColFound      = False
+        bLowRowFound      = False
+
         # -- Getting bounds to cut the SLAM generated map
-        for col in range(SLAMMapImage.shape[1]):
-            if np.any(SLAMMapImage[:,col] < 25) and bLowColFound == False:
+        for col in range(self.SLAMMapImage.shape[1]):
+            if (
+                np.any(self.SLAMMapImage[:,col] < 25) and
+                bLowColFound == False
+            ):
                 lowestCol = col
                 bLowColFound = True
-            elif np.any(SLAMMapImage[:,col] < 25) and bLowColFound != False:
+            elif (
+                np.any(self.SLAMMapImage[:,col] < 25) and
+                bLowColFound != False
+            ):
                 highestCol = col
-        for row in range(SLAMMapImage.shape[0]):
-            if np.any(SLAMMapImage[row,:] < 25) and bLowRowFound == False:
+        for row in range(self.SLAMMapImage.shape[0]):
+            if (
+                np.any(self.SLAMMapImage[row,:] < 25) and
+                bLowRowFound == False
+            ):
                 lowestRow = row
                 bLowRowFound = True
-            elif np.any(SLAMMapImage[row,:] < 25) and bLowRowFound != False:
+            elif (
+                np.any(self.SLAMMapImage[row,:] < 25) and
+                bLowRowFound != False
+            ):
                 highestRow = row
-        SLAMMapImage = SLAMMapImage[lowestRow:highestRow, lowestCol:highestCol] # Map in BW and cropped
-        
-        # cv2.imwrite("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapResultCV2aftercropb4scale.png", SLAMMapImage)
-        # SLAMMapImage = Image.fromarray(np.uint8(SLAMMapImage)).convert('L')
-        # SLAMMapImage.save('Prueba0.png')
-        GTImage0 = Image.open(self.GTMapPath)
-        print(GTImage0.mode)
-        thresh = 200
-        fn = lambda x : 255 if x > thresh else 0
-        GTImage = GTImage0.convert('L').point(fn, mode='1')
-        print(GTImage.mode)
-        GTImage = np.asarray(GTImage)
-        GTImage = (GTImage * 255).astype(np.uint8)
-        tSizeScale = (GTImage.shape[1], GTImage.shape[0])
-        # SLAMMapImage = SLAMMapImage.resize(tSizeScale)
-        # thresh = 200
-        # fn = lambda x : 255 if x > thresh else 0
-        # SLAMMapImage = SLAMMapImage.point(fn, mode='1')
-        # SLAMMapImage = np.asarray(SLAMMapImage)
-        # SLAMMapImage = (SLAMMapImage * 255).astype(np.uint8)
-        # SLAMMapImage.save('Prueba1.png')
-        SLAMMapImage = cv2.resize(SLAMMapImage, tSizeScale)
-        # cv2.imwrite("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapResultCV2aftercropafterscale.png", SLAMMapImage)
-        # # -- Computing the map error metric as RMSE - Try using https://stackoverflow.com/questions/52576498/find-nearest-neighbor-to-each-pixel-in-a-map
-        fMapError = np.sum((SLAMMapImage.astype("float") - GTImage.astype("float")) ** 2)
-        fMapError /= float(SLAMMapImage.shape[0] * SLAMMapImage.shape[1])
-        fMapError = math.sqrt(fMapError)
+        self.SLAMMapImage = (
+            self.SLAMMapImage[lowestRow:highestRow, lowestCol:highestCol]
+        )                                                                       # Stores the map output cropped
+        self.SLAMMapImage = cv2.resize(self.SLAMMapImage, self.tSizeScale)
+
+    def pre_process_ground_truth_map(self):
+        # -- Converts the ground truth image to a binary array
+        self.GTMapImage = Image.open(self.GTMapImage)
+        fn              = lambda x : 255 if x > 200 else 0                      # Decision threshold settled to 200
+        self.GTMapImage = np.asarray(
+            self.GTMapImage.convert('L').point(fn, mode='1')
+        )                                                                       # Converts the ground truth image to an array
+        self.GTMapImage = (self.GTMapImage * 255).astype(np.uint8)
+        self.tSizeScale = (self.GTMapImage.shape[1], self.GTMapImage.shape[0])
+
+    def compute_map_error(self):
+        # -- Compute auxiliar variables
+        fSLAMMapImage    = self.SLAMMapImage.astype("float")
+        fGTImage         = self.GTMapImage.astype("float")
+        iSLAMImageHeight = self.SLAMMapImage.shape[0]
+        iSLAMImageWidth  = self.SLAMMapImage.shape[1]
+
+        # -- Compares the ground truth with the SLAM generated map
+        fMapError        = np.sum((fSLAMMapImage - fGTImage) ** 2)
+        fMapError       /= float(iSLAMImageHeight * iSLAMImageWidth)
+        fMapError        = math.sqrt(fMapError)
+
         return fMapError
 
-mmv = open("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapMetricVariables.txt", "r")
+
+################################################################################
+# --                               Main script                              -- #
+################################################################################
+
+PACKAGE_PATH = "/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/"
+
+# -- Get the paths of the maps
+mmv = open(PACKAGE_PATH + "src/MapMetricVariables.txt", "r")
 for line in mmv.readlines():
     if "GTMapPath" in line:
         GTMapPath = line.split("=")[1].replace("\n","")
     elif "SLAMMapPath" in line:
         SLAMMapPath = line.split("=")[1].replace("\n","")
 mmv.close()
+
+# -- Pre-process the maps
 MapMetric = MapAccuracy()
-MapMetric.setGroundTruthMap(GTMapPath)
-error = MapMetric.compute(SLAMMapPath)
-mmv = open("/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/MapMetricVariables.txt", "w")
+MapMetric.set_ground_truth_map(GTMapPath)
+MapMetric.set_slam_generated_map(SLAMMapPath)
+MapMetric.pre_process_ground_truth_map()
+MapMetric.pre_process_slam_generated_map()
+
+error = MapMetric.compute_map_error()
+
+# -- Save the map error into the output file
+mmv = open(PACKAGE_PATH + "src/MapMetricVariables.txt", "w")
 mmv.write("MapError={}\n".format(error))
 mmv.close()
