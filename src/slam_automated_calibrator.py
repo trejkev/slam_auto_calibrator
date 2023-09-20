@@ -251,7 +251,7 @@ class Calibrator(object):
             mmv.close()
 
         # --- Running the error calculator
-        self.sMapMetricFile = "{}MapAccuracy.py".format(self.sSourcePath)
+        self.sMapMetricFile = "{}map_accuracy.py".format(self.sSourcePath)
         process = subprocess.Popen(
             "'{}'".format(self.sMapMetricFile), shell = True
         )
