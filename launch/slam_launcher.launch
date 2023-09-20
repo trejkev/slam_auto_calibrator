@@ -52,7 +52,7 @@
     </include>
 
     <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
-    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
+    <include file="$(find slam_auto_calibrator)/launch/ape_launcher.launch">
         <arg name="robot_name" value="$(arg first_tb3)"/>
     </include>
 
@@ -91,7 +91,7 @@
     </include>
 
     <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
-    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
+    <include file="$(find slam_auto_calibrator)/launch/ape_launcher.launch">
         <arg name="robot_name" value="$(arg second_tb3)"/>
     </include>
 
@@ -130,7 +130,7 @@
     </include>
 
     <!-- Calling the node to publish the APE metric of the TurtleBot3 -->
-    <include file="$(find slam_auto_calibrator)/launch/APE_launcher.launch">
+    <include file="$(find slam_auto_calibrator)/launch/ape_launcher.launch">
         <arg name="robot_name" value="$(arg third_tb3)"/>
     </include>
 
