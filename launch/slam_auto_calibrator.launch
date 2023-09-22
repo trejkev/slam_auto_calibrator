@@ -15,26 +15,26 @@
   <arg name="Training_Cycles"       default="2"            />
 
   <!-- Paths  arguments -->
-  <arg name="This_Node_src_Path"    default="/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/"                              />
-  <arg name="Maps_Path"             default="/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/Maps/"                             />
-  <arg name="Params_File_Path"      default="/home/cerlabrob/catkin_ws/src/turtlebot3/turtlebot3_slam/config/gmapping_params.yaml" />
+  <arg name="This_Node_src_Path" default="/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/"                              />
+  <arg name="Maps_Path"          default="/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/Maps/"                             />
+  <arg name="Params_File_Path"   default="/home/cerlabrob/catkin_ws/src/turtlebot3/turtlebot3_slam/config/gmapping_params.yaml" />
 
 
   <!-- Calibrator parameters -->
-  <param name="TrainingCycles"        type="int" value="$(arg Training_Cycles)"       />
-  <param name="SLAMName"              type="str" value="$(arg SLAM_Name)"             />
-  <param name="RobotsQty"             type="int" value="$(arg Robots_Quantity)"       />
-  <param name="RobotsLauchName"       type="str" value="$(arg Robots_Launch_Name)"    />
-  <param name="SelfPackageName"       type="str" value="$(arg Self_Package_Name)"     />
-  <param name="SLAMLaunchName"        type="str" value="$(arg SLAM_Launch_Name)"      />
-  <param name="APETopicName"          type="str" value="$(arg APE_Topic_Name)"        />
-  <param name="RobotsPronoun"         type="str" value="$(arg Robots_Pronoun)"        />
-  <param name="GroundTruthFilename"   type="str" value="$(arg Ground_Truth_Filename)" />
-  <param name="RunType"               type="str" value="$(arg Run_Type)"              />
-  <param name="ValidationTrialsQty"   type="int" value="$(arg Validation_Trials_Qty)" />
-  <param name="ThisNodeSrcPath"       type="str" value="$(arg This_Node_src_Path)"    />
-  <param name="MapsPath"              type="str" value="$(arg Maps_Path)"             />
-  <param name="ParamsFilePath"        type="str" value="$(arg Params_File_Path)"      />
+  <param name="TrainingCycles"      type="int" value="$(arg Training_Cycles)"       />
+  <param name="SLAMName"            type="str" value="$(arg SLAM_Name)"             />
+  <param name="RobotsQty"           type="int" value="$(arg Robots_Quantity)"       />
+  <param name="RobotsLauchName"     type="str" value="$(arg Robots_Launch_Name)"    />
+  <param name="SelfPackageName"     type="str" value="$(arg Self_Package_Name)"     />
+  <param name="SLAMLaunchName"      type="str" value="$(arg SLAM_Launch_Name)"      />
+  <param name="APETopicName"        type="str" value="$(arg APE_Topic_Name)"        />
+  <param name="RobotsPronoun"       type="str" value="$(arg Robots_Pronoun)"        />
+  <param name="GroundTruthFilename" type="str" value="$(arg Ground_Truth_Filename)" />
+  <param name="RunType"             type="str" value="$(arg Run_Type)"              />
+  <param name="ValidationTrialsQty" type="int" value="$(arg Validation_Trials_Qty)" />
+  <param name="ThisNodeSrcPath"     type="str" value="$(arg This_Node_src_Path)"    />
+  <param name="MapsPath"            type="str" value="$(arg Maps_Path)"             />
+  <param name="ParamsFilePath"      type="str" value="$(arg Params_File_Path)"      />
 
   <!-- Launch SLAM auto-calibrator node -->
   <node pkg="slam_auto_calibrator" type="slam_automated_calibrator.py" name="slam_auto_calibrator"/>
