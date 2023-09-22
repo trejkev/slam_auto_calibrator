@@ -121,13 +121,13 @@ class MapAccuracy:
 PACKAGE_PATH = "/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/"
 
 # -- Get the paths of the maps
-mmv = open(PACKAGE_PATH + "src/MapMetricVariables.txt", "r")
-for line in mmv.readlines():
+file = open(PACKAGE_PATH + "Maps/MapMetricVariables.txt", "r")
+for line in file.readlines():
     if "GTMapPath" in line:
         GTMapPath = line.split("=")[1].replace("\n","")
     elif "SLAMMapPath" in line:
         SLAMMapPath = line.split("=")[1].replace("\n","")
-mmv.close()
+file.close()
 
 # -- Pre-process the maps
 MapMetric = MapAccuracy()
@@ -136,9 +136,9 @@ MapMetric.set_slam_generated_map(SLAMMapPath)
 MapMetric.pre_process_ground_truth_map()
 MapMetric.pre_process_slam_generated_map()
 
-error = MapMetric.compute_map_error()
+fError = MapMetric.compute_map_error()
 
 # -- Save the map error into the output file
-mmv = open(PACKAGE_PATH + "src/MapMetricVariables.txt", "w")
-mmv.write("MapError={}\n".format(error))
-mmv.close()
+file = open(PACKAGE_PATH + "Maps/MapMetricVariables.txt", "w")
+file.write("MapError={}\n".format(fError))
+file.close()

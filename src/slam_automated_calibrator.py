@@ -245,7 +245,7 @@ class Calibrator(object):
 
         # --- Sending ground truth and slam maps paths to the error calculator
         with open(
-            "{}MapMetricVariables.txt".format(self.sSourcePath), "w") as mmv:
+            "{}MapMetricVariables.txt".format(self.sMapsPath), "w") as mmv:
             mmv.write("GTMapPath={}\n".format(self.sGTMapPath))
             mmv.write("SLAMMapPath={}\n".format(self.sSLAMMapPath))
             mmv.close()
