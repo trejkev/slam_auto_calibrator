@@ -44,9 +44,9 @@ class Calibrator(object):
 
         self.read_launch_params()
 
-        self.APETopicReadings = list(range(2*self.iRobotsQty))
-        self.APETopics        = list(range(self.iRobotsQty))
-        self.GTMapPath        = self.GTpath + self.GTName
+        self.lAPETopicReadings = list(range(2 * self.iRobotsQty))
+        self.lAPETopics        = list(range(self.iRobotsQty))
+        self.sGTMapPath        = self.sMapsPath + self.sGTName
 
         self.node_initialization()
         self.get_parameters_from_yaml()
@@ -55,29 +55,29 @@ class Calibrator(object):
 
     def read_launch_params(self):
         if rospy.has_param("/TrainingCycles"     ):
-            self.iTrainingCycles     = rospy.get_param("/TrainingCycles"     )
+            self.iTrainingCycles  = rospy.get_param("/TrainingCycles"     )
         if rospy.has_param("/SLAMName"           ):
-            self.sSLAMName           = rospy.get_param("/SLAMName"           )
+            self.sSLAMName        = rospy.get_param("/SLAMName"           )
         if rospy.has_param("/RobotsQty"          ):
-            self.iRobotsQty          = rospy.get_param("/RobotsQty"          )
+            self.iRobotsQty       = rospy.get_param("/RobotsQty"          )
         if rospy.has_param("/RobotsLauchName"    ):
-            self.sRobotsLauchName    = rospy.get_param("/RobotsLauchName"    )  # Launch file where robots and world description are
+            self.sRobotsLauchName = rospy.get_param("/RobotsLauchName"    )     # Launch file where robots and world description are
         if rospy.has_param("/SelfPackageName"    ):
-            self.sSelfPackageName    = rospy.get_param("/SelfPackageName"    )  # Launch file where SLAM, map merger, and rviz are called
+            self.sSelfPackageName = rospy.get_param("/SelfPackageName"    )     # Launch file where SLAM, map merger, and rviz are called
         if rospy.has_param("/SLAMLaunchName"     ):
-            self.sSLAMLaunchName     = rospy.get_param("/SLAMLaunchName"     )
+            self.sSLAMLaunchName  = rospy.get_param("/SLAMLaunchName"     )
         if rospy.has_param("/APETopicName"       ):
-            self.APETopicName        = rospy.get_param("/APETopicName"       )  # Publisher topic for traslation and rotation APE mean
+            self.sAPETopicName    = rospy.get_param("/APETopicName"       )     # Publisher topic for traslation and rotation APE mean
         if rospy.has_param("/RobotsNamespaceBase"):
-            self.RobotsNamespaceBase = rospy.get_param("/RobotsNamespaceBase")  # Prefix for robots
+            self.sRobotPronoun    = rospy.get_param("/RobotsPronoun"      )     # Prefix for robots
         if rospy.has_param("/GroundTruthFilename"):
-            self.GTName              = rospy.get_param("/GroundTruthFilename")
+            self.sGTName          = rospy.get_param("/GroundTruthFilename")
         if rospy.has_param("/ThisNodeSrcPath"    ):
-            self.sSourcePath         = rospy.get_param("/ThisNodeSrcPath"    )
+            self.sSourcePath      = rospy.get_param("/ThisNodeSrcPath"    )
         if rospy.has_param("/MapsPath"           ):
-            self.GTpath              = rospy.get_param("/MapsPath"           )
+            self.sMapsPath        = rospy.get_param("/MapsPath"           )
         if rospy.has_param("/ParamsFilePath"     ):
-            self.sParamsFilePath     = rospy.get_param("/ParamsFilePath"     )  # SLAM params file location
+            self.sParamsFilePath  = rospy.get_param("/ParamsFilePath"     )     # SLAM params file location
 
 
     def node_initialization(self):
@@ -165,19 +165,19 @@ class Calibrator(object):
 
 
     def ape_reader(self, data):
-        if data.frame_id == self.RobotsNamespaceBase + "0":
-            self.APETopicReadings[0] = data.translation_error_mean
-            self.APETopicReadings[0 + self.iRobotsQty] = (
+        if data.frame_id == self.sRobotPronoun + "0":
+            self.lAPETopicReadings[0] = data.translation_error_mean
+            self.lAPETopicReadings[0 + self.iRobotsQty] = (
                 data.rotation_error_mean
             )
-        elif data.frame_id == self.RobotsNamespaceBase + "1":
-            self.APETopicReadings[1] = data.translation_error_mean
-            self.APETopicReadings[1 + self.iRobotsQty] = (
+        elif data.frame_id == self.sRobotPronoun + "1":
+            self.lAPETopicReadings[1] = data.translation_error_mean
+            self.lAPETopicReadings[1 + self.iRobotsQty] = (
                 data.rotation_error_mean
             )
-        elif data.frame_id == self.RobotsNamespaceBase + "2":
-            self.APETopicReadings[2] = data.translation_error_mean
-            self.APETopicReadings[2 + self.iRobotsQty] = (
+        elif data.frame_id == self.sRobotPronoun + "2":
+            self.lAPETopicReadings[2] = data.translation_error_mean
+            self.lAPETopicReadings[2 + self.iRobotsQty] = (
                 data.rotation_error_mean
             )
 
@@ -228,25 +228,25 @@ class Calibrator(object):
         for robot in range(self.iRobotsQty):
             rospy.loginfo(
                 "Rob{}_TE_C{}: {}"
-                .format(robot, self.iActualCycle, self.APETopicReadings[robot])
+                .format(robot, self.iActualCycle, self.lAPETopicReadings[robot])
             )
             rospy.loginfo(
                 "Rob{}_RE_C{}: {}"
                 .format(
                     robot,
                     self.iActualCycle,
-                    self.APETopicReadings[robot + self.iRobotsQty]
+                    self.lAPETopicReadings[robot + self.iRobotsQty]
                 )
             )
 
 
     def compute_map_metric(self):
-        self.sSLAMMapPath = "{}{}.pgm".format(self.GTpath, self.MapName)
+        self.sSLAMMapPath = "{}{}.pgm".format(self.sMapsPath, self.MapName)
 
         # --- Sending ground truth and slam maps paths to the error calculator
         with open(
             "{}MapMetricVariables.txt".format(self.sSourcePath), "w") as mmv:
-            mmv.write("GTMapPath={}\n".format(self.GTMapPath))
+            mmv.write("GTMapPath={}\n".format(self.sGTMapPath))
             mmv.write("SLAMMapPath={}\n".format(self.sSLAMMapPath))
             mmv.close()
 
@@ -261,7 +261,7 @@ class Calibrator(object):
         try:
             with open(
                 "{}MapMetricVariables.txt"
-                .format(self.sSourcePath), "r") as mmv:
+                .format(self.sMapsPath), "r") as mmv:
                 for line in mmv.readlines():
                     self.fActualMapError = float(line.split("=")[1])
             return self.fActualMapError
@@ -294,7 +294,7 @@ class Calibrator(object):
             "{}_Trial_{}_RobotsQty_{}_Map_{}"
             .format(self.sSLAMName, self.iActualCycle, self.iRobotsQty, date)
         )
-        sPath = "{}{}".format(self.GTpath, self.MapName)
+        sPath = "{}{}".format(self.sMapsPath, self.MapName)
         process = (
             subprocess.Popen(
                 "rosrun map_server map_saver -f {}".format(sPath), shell = True
@@ -316,12 +316,12 @@ class Calibrator(object):
             sTopic = (
                 "/{}{}/{}"
                 .format(
-                    self.RobotsNamespaceBase,
+                    self.sRobotPronoun,
                     str(iRobot),
-                    self.APETopicName
+                    self.sAPETopicName
                 )
             )
-            self.APETopics[iRobot] = rospy.Subscriber(
+            self.lAPETopics[iRobot] = rospy.Subscriber(
                 sTopic, APE, self.ape_reader
             )
             rospy.loginfo("Subscribed to {}".format(sTopic))
@@ -351,7 +351,7 @@ class Calibrator(object):
             .format(self.iActualCycle)
         )
         self.iActualCycle += 1
-        return self.fActualMapError # , self.APETopicReadings
+        return self.fActualMapError # , self.lAPETopicReadings
 
 
     def target_function(self, args):

@@ -7,7 +7,7 @@
   <arg name="Self_Package_Name"     default="slam_auto_calibrator"        />
   <arg name="SLAM_Launch_Name"      default="slam_launcher.launch"        />
   <arg name="APE_Topic_Name"        default="APE"                         />
-  <arg name="Robots_Namespace_Base" default="tb3_"                        />
+  <arg name="Robots_Pronoun"        default="tb3_"                        />
   <arg name="Ground_Truth_Filename" default="Ground_Truth_Image.png"      />
   <arg name="Run_Type"              default="Optimization"                />
   <arg name="Validation_Trials_Qty" default="30"                          />
@@ -25,7 +25,7 @@
   <param name="SelfPackageName"       type="str" value="$(arg Self_Package_Name)"     />
   <param name="SLAMLaunchName"        type="str" value="$(arg SLAM_Launch_Name)"      />
   <param name="APETopicName"          type="str" value="$(arg APE_Topic_Name)"        />
-  <param name="RobotsNamespaceBase"   type="str" value="$(arg Robots_Namespace_Base)" />
+  <param name="RobotsPronoun"         type="str" value="$(arg Robots_Pronoun)"        />
   <param name="GroundTruthFilename"   type="str" value="$(arg Ground_Truth_Filename)" />
   <param name="RunType"               type="str" value="$(arg Run_Type)"              />
   <param name="ValidationTrialsQty"   type="int" value="$(arg Validation_Trials_Qty)" />
