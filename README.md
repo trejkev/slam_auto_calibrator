@@ -52,8 +52,13 @@ This file contains two important variables to consider:
 
 This file holds the general configuration of each of the robots in the arena, therefore, here we define the specific SLAM algorithm to be used by each of the robots, if you want to change the SLAM algorithm to be run by your robot(s), here is where you must do so, look for the specific group of each of the robots, and update the package to be used for localization and mapping.
 
-## Parameters File Format
+## Parameters File: Parameter Format
 
 Yaml files are used to store parameters modification, when the user wants to set a parameter to a different value than its default value. Doing so is quite simple, the user just has to type in the parameter, followed by a colon sign, and next the new value.
 
-However, to be able to use an optimization algorithm, there was a need to tell what the variable type is, and what its maximum and minimum desired values are, so that it was possible to set a search space, tailored by the user. The way this was implemented  was by following this standard: _{variable}: {initial value} #{var type (only int, float, and bool are allowed)} #min={min value} #max={max value}_, for example, this is an acceptable parameter formatting: _varExample: 0.3 #float #min=0.1 #max=0.5_.
+However, to be able to use an optimization algorithm, there was a need to tell what the variable type is, and what its maximum and minimum desired values are, so that it was possible to set a search space, tailored by the user. The way this was implemented  was by following this standard: _{variable}: {initial value} #{var type (only int, float, and bool are allowed)} #min={min value} #max={max value}_. See the example below.
+
+<p align="center">
+  <img src="https://github.com/trejkev/slam_auto_calibrator/assets/18760154/f5cd020d-0f33-4b93-8fd3-ca91142c06bf" width="800" />
+</p>
+
