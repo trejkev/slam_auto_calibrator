@@ -12,7 +12,7 @@
   <!-- Test approach arguments-->
   <arg name="Run_Type"              default="Optimization" />                   <!-- Optimization / Validation -->>
   <arg name="Validation_Trials_Qty" default="30"           />
-  <arg name="Trainin_Cycles"        default="2"            />
+  <arg name="Training_Cycles"       default="2"            />
 
   <!-- Paths  arguments -->
   <arg name="This_Node_src_Path"    default="/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/"                              />
@@ -21,7 +21,7 @@
 
 
   <!-- Calibrator parameters -->
-  <param name="TrainingCycles"        type="int" value="$(arg Trainin_Cycles)"        />
+  <param name="TrainingCycles"        type="int" value="$(arg Training_Cycles)"       />
   <param name="SLAMName"              type="str" value="$(arg SLAM_Name)"             />
   <param name="RobotsQty"             type="int" value="$(arg Robots_Quantity)"       />
   <param name="RobotsLauchName"       type="str" value="$(arg Robots_Launch_Name)"    />
