@@ -122,10 +122,14 @@ class Calibrator(object):
                     value  = float(value)
                     minVal = float(minVal)
                     maxVal = float(maxVal)
-                else:
+                elif typeVar == "bool":
                     value  = value
                     minVal = minVal
                     maxVal = maxVal
+                else:
+                    rospy.logerr(
+                        "Parameter type {} not supported".format(typeVar)
+                    )
                 self.dParams.update({param: [value, typeVar, minVal, maxVal]})
         fParamsFile.close()
 
