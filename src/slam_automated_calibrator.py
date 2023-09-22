@@ -68,7 +68,7 @@ class Calibrator(object):
             self.sSLAMLaunchName  = rospy.get_param("/SLAMLaunchName"     )
         if rospy.has_param("/APETopicName"       ):
             self.sAPETopicName    = rospy.get_param("/APETopicName"       )     # Publisher topic for traslation and rotation APE mean
-        if rospy.has_param("/RobotsNamespaceBase"):
+        if rospy.has_param("/RobotsPronoun"):
             self.sRobotPronoun    = rospy.get_param("/RobotsPronoun"      )     # Prefix for robots
         if rospy.has_param("/GroundTruthFilename"):
             self.sGTName          = rospy.get_param("/GroundTruthFilename")
