@@ -1,5 +1,11 @@
 # SLAM Automatic Calibrator
-This ROS node can perform automated external calibration of a SLAM algorithm, being managed by a set of robots collaborating between them, or a single robot (it will depend on the .launch files setup), and using the humongous power that Bayesian optimization provides.
+This ROS node can perform automated external calibration of a SLAM algorithm's map accuracy, being managed by a set of robots collaborating between them, or a single robot (it will depend on the .launch files setup), and using the humongous power that Bayesian optimization provides.
+
+An output example can be seen in the figure below, where we made a simulated arena with 3  TurtleBot3 robots (left side figure), started with default parameters to show their resulting map (central figure), and ended with a set of parameters that hugely optimized the resulting map (right side figure) in a relatively short number of optimization trials, compared to a full-factorial experiment, that may be required to configure the algorithm in discrete and limited parameters steps.
+
+<p align="center">
+  <img src="https://github.com/trejkev/slam_auto_calibrator/assets/18760154/0f1bb290-76bc-4294-99a4-3105c1c39320" width="800" />
+</p>
 
 The tool uses hyperopt, a Python library implementing Tree-Structured Parzen Estimators (a statistical variant that Bayesian optimization could use), to try to converge to the set of params that maximizes an output function result.
 
