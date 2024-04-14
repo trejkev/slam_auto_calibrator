@@ -7,7 +7,14 @@ An output example can be seen in the figure below, where we made a simulated are
   <img src="https://github.com/trejkev/slam_auto_calibrator/assets/18760154/0f1bb290-76bc-4294-99a4-3105c1c39320" width="800" />
 </p>
 
-The tool uses hyperopt, a Python library implementing Tree-Structured Parzen Estimators (a statistical variant that Bayesian optimization could use), to try to converge to the set of params that maximizes an output function result.
+The tool uses hyperopt, a Python library implementing Tree-Structured Parzen Estimators (a statistical variant that Bayesian optimization could use), to try to converge to the set of params that maximizes an output function result. 
+
+## Dependencies
+1. ROS Melodic (ROS1)
+2. Python 2.7
+4. Gazebo
+5. Rviz
+6. Hyperopt 0.2.2
 
 ## Steps to use the node:
 1. Into _slam_auto_calibrator.launch_, set the variables needed to run the optimization or validation algorithm, most of them are mandatory.
