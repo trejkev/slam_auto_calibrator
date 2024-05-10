@@ -1,0 +1,7 @@
+image: /home/cerlabrob/catkin_ws/src/slam_auto_calibrator/Maps/gmapping_Trial_0_RobotsQty_3_Map_2023_09_21-07_48_31_PM.pgm
+resolution: 0.054753
+origin: [-100.253558, -99.979791, 0.000000]
+negate: 0
+occupied_thresh: 0.65
+free_thresh: 0.196
+

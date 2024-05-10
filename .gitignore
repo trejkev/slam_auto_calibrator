@@ -1,0 +1,8 @@
+./Maps/gmapping*
+./Maps/karto*
+./Maps/cartographer*
+./Maps/rtab*
+
+# Into src directory, ignores everything that is not .py*
+./src/*
+./src/!*.py*
