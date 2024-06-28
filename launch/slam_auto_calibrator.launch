@@ -12,7 +12,8 @@
   <!-- Test approach arguments-->
   <arg name="Run_Type"              default="Optimization" />                   <!-- Optimization / Validation -->>
   <arg name="Validation_Trials_Qty" default="30"           />
-  <arg name="Training_Cycles"       default="2"            />
+  <arg name="Population_Size"       default="50"           />
+  <arg name="Generations_Qty"       default="4"            />
 
   <!-- Paths  arguments -->
   <arg name="This_Node_src_Path" default="/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/"                              />
@@ -21,10 +22,9 @@
 
 
   <!-- Calibrator parameters -->
-  <param name="TrainingCycles"      type="int" value="$(arg Training_Cycles)"       />
   <param name="SLAMName"            type="str" value="$(arg SLAM_Name)"             />
   <param name="RobotsQty"           type="int" value="$(arg Robots_Quantity)"       />
-  <param name="RobotsLauchName"     type="str" value="$(arg Robots_Launch_Name)"    />
+  <param name="RobotsLaunchName"    type="str" value="$(arg Robots_Launch_Name)"    />
   <param name="SelfPackageName"     type="str" value="$(arg Self_Package_Name)"     />
   <param name="SLAMLaunchName"      type="str" value="$(arg SLAM_Launch_Name)"      />
   <param name="APETopicName"        type="str" value="$(arg APE_Topic_Name)"        />
@@ -35,6 +35,8 @@
   <param name="ThisNodeSrcPath"     type="str" value="$(arg This_Node_src_Path)"    />
   <param name="MapsPath"            type="str" value="$(arg Maps_Path)"             />
   <param name="ParamsFilePath"      type="str" value="$(arg Params_File_Path)"      />
+  <param name="Population_Size"     type="int" value="$(arg Population_Size)"       />
+  <param name="Generations_Qty"     type="int" value="$(arg Generations_Qty)"       />
 
   <!-- Launch SLAM auto-calibrator node -->
   <node pkg="slam_auto_calibrator" type="slam_automated_calibrator.py" name="slam_auto_calibrator"/>
