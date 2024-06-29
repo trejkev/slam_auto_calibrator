@@ -43,6 +43,7 @@ from deap import base
 from deap import creator
 from deap import tools
 
+# List of params that shall be in the slam_auto_calibrator.launch
 lParamsList = [
     "/TrainingCycles"  , "/SLAMName"       , "/RobotsQty"          ,
     "/RobotsLaunchName", "/SelfPackageName", "/SLAMLaunchName"     ,
@@ -50,6 +51,14 @@ lParamsList = [
     "/ThisNodeSrcPath" , "/MapsPath"       , "/ParamsFilePath"     ,
     "/Population_Size" , "/Generations_Qty"
 ]
+
+# Sleep times
+NODE_INITIALIZATION_WAIT_TIME_SEC           = 60
+NODES_KILLER_WAIT_TIME_SEC                  = 10
+WATCHDOG_WAIT_TIME_SEC                      = 5
+CYCLE_WAIT_TIME                             = 32
+NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC = 10
+
 
 class Calibrator(object):
 
@@ -64,8 +73,11 @@ class Calibrator(object):
             for param in lParamsList if rospy.has_param(param)
         }
 
+        # Create the lists that will store the APE results
         self.lAPETopicReadings = list(range(2 * self.launchParams["RobotsQty"]))
         self.lAPETopics        = list(range(self.launchParams["RobotsQty"]))
+
+        # Path to the ground truth file
         self.sGTMapPath        = self.launchParams["MapsPath"] + \
                                  self.launchParams["GroundTruthFilename"]
 
@@ -75,15 +87,16 @@ class Calibrator(object):
     def node_initialization(self):
         self.kill_all_nodes()                                                   # Making sure we have a fresh start without unwanted nodes
         rospy.init_node('slam_auto_calibrator')
-        rospy.loginfo("LAUNCH PARAMS ARE")
-        rospy.loginfo(self.launchParams)
-        # -- Open the arena with three robots
+
+        rospy.loginfo("Launch params are: {}".format(self.launchParams))
+
+        # Open the arena with three robots
         subprocess.Popen(
             "roslaunch slam_auto_calibrator {}"
             .format(self.launchParams["RobotsLaunchName"]),
             shell = True
         )
-        time.sleep(60)
+        time.sleep(NODE_INITIALIZATION_WAIT_TIME_SEC)
 
 
     def get_parameters_from_yaml(self):
@@ -179,14 +192,14 @@ class Calibrator(object):
 
 
     def kill_all_nodes(self):
-        # -- Killing all gazebo processes that may be open
+        # Killing all gazebo processes that may be open
         for procToKill in ["gazebo", "gzserver", "gzclient"]:
             process = subprocess.Popen(
                 "killall -9 {}".format(procToKill), shell = True
             )
             process.wait()
 
-        # -- Kill all nodes for a clean start
+        # Kill all nodes for a clean start
         nodes = os.popen("rosnode list").readlines()
         for index in range(len(nodes)):
             nodes[index] = nodes[index].replace("\n", "")
@@ -194,11 +207,11 @@ class Calibrator(object):
             if 'rosout' not in node and 'slam_auto_calibrator' not in node:
                 os.system("rosnode kill " + node)
 
-        time.sleep(10)
+        time.sleep(NODES_KILLER_WAIT_TIME_SEC)
 
 
     def kill_all_non_gazebo_nodes(self):
-        # -- Kill the SLAM algorithms and their related nodes
+        # Kill the SLAM algorithms and their related nodes
         nodes = os.popen("rosnode list").readlines()
         for index in range(len(nodes)):
             nodes[index] = nodes[index].replace("\n", "")
@@ -213,7 +226,7 @@ class Calibrator(object):
                     "Cycle {} completed: rosnode kill {}"
                     .format(self.iActualCycle, node)
                 )
-                time.sleep(10)
+                time.sleep(NODES_KILLER_WAIT_TIME_SEC)
 
 
     def record_errors(self):
@@ -239,21 +252,21 @@ class Calibrator(object):
     def compute_map_metric(self):
         self.sSLAMMapPath = "{}{}.pgm".format(self.launchParams["MapsPath"], self.MapName)
 
-        # --- Sending ground truth and slam maps paths to the error calculator
+        # Sending ground truth and slam maps paths to the error calculator
         with open(
             "{}MapMetricVariables.txt".format(self.launchParams["MapsPath"]), "w") as mmv:
             mmv.write("GTMapPath={}\n".format(self.sGTMapPath))
             mmv.write("SLAMMapPath={}\n".format(self.sSLAMMapPath))
             mmv.close()
 
-        # --- Running the error calculator
+        # Running the error calculator
         self.sMapMetricFile = "{}map_accuracy.py".format(self.launchParams["ThisNodeSrcPath"])
         process = subprocess.Popen(
             "'{}'".format(self.sMapMetricFile), shell = True
         )
         process.wait()
 
-        # --- Reading the error
+        # Reading the error
         try:
             with open(
                 "{}MapMetricVariables.txt"
@@ -279,7 +292,7 @@ class Calibrator(object):
                     break
                 if iNodeCount == len(nodes):
                     bRunCompleted = True
-            time.sleep(5)
+            time.sleep(WATCHDOG_WAIT_TIME_SEC)
 
 
     def generate_map(self):
@@ -301,13 +314,13 @@ class Calibrator(object):
 
 
     def run_cycle(self):
-        time.sleep(32)
-        # -- Launch the SLAM algorithms and the automatic navigator
+        time.sleep(CYCLE_WAIT_TIME)
+        # Launch the SLAM algorithms and the automatic navigator
         subprocess.Popen(
             "roslaunch {} {}"
             .format(self.launchParams["SelfPackageName"], self.launchParams["SLAMLaunchName"]), shell = True
         )
-        time.sleep(10)
+        time.sleep(NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC)
         for iRobot in range(self.launchParams["RobotsQty"]):
             sTopic = (
                 "/{}{}/{}"
@@ -323,25 +336,21 @@ class Calibrator(object):
             rospy.loginfo("Subscribed to {}".format(sTopic))
         rospy.loginfo("Starting lap {}".format(self.iActualCycle))    
         self.cycle_completion_watchdog()                                        # Wait for the robots to complete their lap
-        rospy.loginfo("Completed lap {}".format(self.iActualCycle))  
-        sCurrDate = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
+        rospy.loginfo("Completed lap {}".format(self.iActualCycle))
         rospy.loginfo(
             "Running map generator for cycle {}".format(self.iActualCycle)
         )
         self.generate_map()                                                     # Generate the SLAM map as pgm image
-        sCurrDate = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
         rospy.loginfo(
             "Running map metric computation for cycle {}"
             .format(self.iActualCycle)
         )  
         self.compute_map_metric()                                               # Call an external script to compute the map metric
-        sCurrDate = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
         rospy.loginfo(
             "Running errors recorder for cycle {}".format(self.iActualCycle)
         )
         self.record_errors()                                                    # Record the errors into log files
         self.kill_all_non_gazebo_nodes()
-        sCurrDate = datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p")
         rospy.loginfo(
             "Killing all non-gazebo nodes for cycle {}"
             .format(self.iActualCycle)
@@ -361,7 +370,7 @@ class Calibrator(object):
                                         self.dParams[param][3]]})
         rospy.loginfo("Current run params: {}".format(self.dParams))
         self.set_parameters_on_yaml()
-        return self.run_cycle()
+        return self.run_cycle(),
 
 
     def optimize_parameters(self):
@@ -415,7 +424,7 @@ class Calibrator(object):
             halloffame = hof,
             verbose = True
         )
-        
+
         # Print the best solution found
         print("Best individual is: ", hof[0])
         print("With fitness: ", hof[0].fitness.values[0])
@@ -425,13 +434,13 @@ class Calibrator(object):
 
 
     def validate_parameters(self, iTrialsQty):
-        # -- Run optimized params iTrialsQty times
+        # Run optimized params iTrialsQty times
         rospy.loginfo(
             "Running with optimized parameters {} times".format(iTrialsQty)
         )
         self.get_parameters_from_yaml()
         rospy.loginfo(self.dParams)
-        for trial in range(iTrialsQty):
+        for _ in range(iTrialsQty):
             self.run_cycle()
 
 
@@ -441,17 +450,17 @@ class Calibrator(object):
 if __name__ == "__main__":
     calibrator = Calibrator()
 
-    # -- Detect if will perform optimization or validation
+    # Detect if will perform optimization or validation
     sRunType = "optimization"
     if rospy.has_param("/RunType"):
         sRunType = rospy.get_param("/RunType")
 
-    # -- Perform parameters optimization
+    # Perform parameters optimization
     if sRunType.lower() == "optimization":
         rospy.loginfo("-- RUNNING OPTIMIZATION --")
         calibrator.optimize_parameters()
 
-    # -- Perform parameters validation
+    # Perform parameters validation
     elif sRunType.lower() == "validation":
         rospy.loginfo("-- RUNNING VALIDATION --")
         iValTrials = 30
@@ -459,6 +468,6 @@ if __name__ == "__main__":
             iValTrials = rospy.get_param("/ValidationTrialsQty")
         calibrator.validate_parameters(iValTrials)
 
-    # -- Clean background jobs
+    # Clean background jobs
     calibrator.kill_all_nodes()      
     os.system("rosnode kill slam_auto_calibrator")
