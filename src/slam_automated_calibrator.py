@@ -27,7 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-# -- Imports -- #
+# General libraries
 import rospy
 import subprocess
 import time
@@ -35,15 +35,24 @@ import os
 import random
 import numpy as np
 from datetime                 import datetime
+
+# Local libraries
 from slam_auto_calibrator.msg import APE
 
-# Libraries for genetic algorithm
+# Genetic Algorithm libraries
 from deap import algorithms
 from deap import base
 from deap import creator
 from deap import tools
 
-# List of params that shall be in the slam_auto_calibrator.launch
+# Global Variables
+NODE_INITIALIZATION_WAIT_TIME_SEC           = 60
+NODES_KILLER_WAIT_TIME_SEC                  = 10
+WATCHDOG_WAIT_TIME_SEC                      = 5
+CYCLE_WAIT_TIME                             = 32
+NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC = 10
+
+# Params into slam_auto_calibrator.launch
 lParamsList = [
     "/TrainingCycles"  , "/SLAMName"       , "/RobotsQty"          ,
     "/RobotsLaunchName", "/SelfPackageName", "/SLAMLaunchName"     ,
@@ -52,20 +61,11 @@ lParamsList = [
     "/Population_Size" , "/Generations_Qty"
 ]
 
-# Sleep times
-NODE_INITIALIZATION_WAIT_TIME_SEC           = 60
-NODES_KILLER_WAIT_TIME_SEC                  = 10
-WATCHDOG_WAIT_TIME_SEC                      = 5
-CYCLE_WAIT_TIME                             = 32
-NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC = 10
-
-
 class Calibrator(object):
 
     def __init__(self):
         self.iActualCycle = 0
         self.dParams      = {}
-        self.dSpace       = {}
 
         # Read Launch Parameters
         self.launchParams = {
@@ -74,12 +74,13 @@ class Calibrator(object):
         }
 
         # Create the lists that will store the APE results
-        self.lAPETopicReadings = list(range(2 * self.launchParams["RobotsQty"]))
-        self.lAPETopics        = list(range(self.launchParams["RobotsQty"]))
+        robotsQty = self.launchParams["RobotsQty"]
+        self.lAPETopicReadings = list(range(2 * robotsQty))
+        self.lAPETopics        = list(range(robotsQty))
 
         # Path to the ground truth file
-        self.sGTMapPath        = self.launchParams["MapsPath"] + \
-                                 self.launchParams["GroundTruthFilename"]
+        self.sGTMapPath = self.launchParams["MapsPath"] + \
+                          self.launchParams["GroundTruthFilename"]
 
         self.node_initialization()
 
@@ -161,16 +162,37 @@ class Calibrator(object):
             iMin = self.dParams[sParamName][2]
             iMax = self.dParams[sParamName][3]
             if self.dParams[sParamName][1].lower() == "int":
-                toolbox.register("attr_{}".format(sParamName), random.randint, iMin, iMax)
+                toolbox.register(
+                    "attr_{}".format(sParamName),
+                    random.randint,
+                    iMin,
+                    iMax
+                )
             elif self.dParams[sParamName][1].lower() == "float":
-                toolbox.register("attr_{}".format(sParamName), random.uniform, iMin, iMax)
+                toolbox.register(
+                    "attr_{}".format(sParamName),
+                    random.uniform,
+                    iMin,
+                    iMax
+                )
             elif self.dParams[sParamName][1].lower() == "bool":
-                toolbox.register("attr_{}".format(sParamName), random.choice, [False, True])
+                toolbox.register(
+                    "attr_{}".format(sParamName),
+                    random.choice,
+                    [False, True]
+                )
             else:
                 rospy.logerr(
                     "Parameter type {} not supported"
                     .format(self.dParams[sParamName][1].lower())
                 )
+                return
+            rospy.loginfo(
+                "Sarch space parameter {} as {}".format(
+                    sParamName,
+                    self.dParams[sParamName][1].lower()
+                )
+            )
 
 
     def ape_reader(self, data):
@@ -237,40 +259,54 @@ class Calibrator(object):
         for robot in range(self.launchParams["RobotsQty"]):
             rospy.loginfo(
                 "Rob{}_TE_C{}: {}"
-                .format(robot, self.iActualCycle, self.lAPETopicReadings[robot])
+                .format(
+                    robot,
+                    self.iActualCycle,
+                    self.lAPETopicReadings[robot]
+                )
             )
+            readingIndex = robot + self.launchParams["RobotsQty"]
             rospy.loginfo(
                 "Rob{}_RE_C{}: {}"
                 .format(
                     robot,
                     self.iActualCycle,
-                    self.lAPETopicReadings[robot + self.launchParams["RobotsQty"]]
+                    self.lAPETopicReadings[readingIndex]
                 )
             )
 
 
     def compute_map_metric(self):
-        self.sSLAMMapPath = "{}{}.pgm".format(self.launchParams["MapsPath"], self.MapName)
+        self.sSLAMMapPath = "{}{}.pgm".format(
+            self.launchParams["MapsPath"], self.MapName
+        )
 
         # Sending ground truth and slam maps paths to the error calculator
-        with open(
-            "{}MapMetricVariables.txt".format(self.launchParams["MapsPath"]), "w") as mmv:
+        filePath = "{}MapMetricVariables.txt".format(
+            self.launchParams["MapsPath"]
+        )
+        with open(filePath, "w") as mmv:
             mmv.write("GTMapPath={}\n".format(self.sGTMapPath))
             mmv.write("SLAMMapPath={}\n".format(self.sSLAMMapPath))
             mmv.close()
 
         # Running the error calculator
-        self.sMapMetricFile = "{}map_accuracy.py".format(self.launchParams["ThisNodeSrcPath"])
+        self.sMapMetricFile = "{}map_accuracy.py".format(
+            self.launchParams["ThisNodeSrcPath"]
+        )
         process = subprocess.Popen(
-            "'{}'".format(self.sMapMetricFile), shell = True
+            "'{}'".format(self.sMapMetricFile),
+            shell = True
         )
         process.wait()
 
         # Reading the error
         try:
+            filePath = "{}MapMetricVariables.txt".format(
+                self.launchParams["MapsPath"]
+            )
             with open(
-                "{}MapMetricVariables.txt"
-                .format(self.launchParams["MapsPath"]), "r") as mmv:
+                filePath, "r") as mmv:
                 for line in mmv.readlines():
                     self.fActualMapError = float(line.split("=")[1])
             return self.fActualMapError
@@ -300,13 +336,18 @@ class Calibrator(object):
             datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p").replace(":","_")
         )
         self.MapName = (
-            "{}_Trial_{}_RobotsQty_{}_Map_{}"
-            .format(self.launchParams["SLAMName"], self.iActualCycle, self.launchParams["RobotsQty"], date)
+            "{}_Trial_{}_RobotsQty_{}_Map_{}".format(
+                self.launchParams["SLAMName"],
+                self.iActualCycle,
+                self.launchParams["RobotsQty"],
+                date
+            )
         )
         sPath = "{}{}".format(self.launchParams["MapsPath"], self.MapName)
         process = (
             subprocess.Popen(
-                "rosrun map_server map_saver -f {}".format(sPath), shell = True
+                "rosrun map_server map_saver -f {}".format(sPath),
+                shell = True
             )
         )
         process.wait()
@@ -317,18 +358,18 @@ class Calibrator(object):
         time.sleep(CYCLE_WAIT_TIME)
         # Launch the SLAM algorithms and the automatic navigator
         subprocess.Popen(
-            "roslaunch {} {}"
-            .format(self.launchParams["SelfPackageName"], self.launchParams["SLAMLaunchName"]), shell = True
+            "roslaunch {} {}".format(
+                self.launchParams["SelfPackageName"],
+                self.launchParams["SLAMLaunchName"]
+            ),
+            shell = True
         )
         time.sleep(NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC)
         for iRobot in range(self.launchParams["RobotsQty"]):
-            sTopic = (
-                "/{}{}/{}"
-                .format(
-                    self.launchParams["RobotsPronoun"],
-                    str(iRobot),
-                    self.launchParams["APETopicName"]
-                )
+            sTopic = "/{}{}/{}".format(
+                self.launchParams["RobotsPronoun"],
+                str(iRobot),
+                self.launchParams["APETopicName"]
             )
             self.lAPETopics[iRobot] = rospy.Subscriber(
                 sTopic, APE, self.ape_reader
@@ -352,8 +393,9 @@ class Calibrator(object):
         self.record_errors()                                                    # Record the errors into log files
         self.kill_all_non_gazebo_nodes()
         rospy.loginfo(
-            "Killing all non-gazebo nodes for cycle {}"
-            .format(self.iActualCycle)
+            "Killing all non-gazebo nodes for cycle {}".format(
+                self.iActualCycle
+            )
         )
         self.iActualCycle += 1
         return self.fActualMapError # , self.lAPETopicReadings
@@ -361,9 +403,32 @@ class Calibrator(object):
 
     def target_function(self, individual):
         # Get a dict of param: value
-        params = {param: individual[i] for i, param in enumerate(self.dParams.keys())}
+        params = {
+            param: individual[i] \
+            for i, param in enumerate(self.dParams.keys())
+        }
         for param in list(self.dParams.keys()):
             value = params[param]
+            # Post-processing mutation may modify the values, making integers
+            # become float, or values get out of bounds
+            if self.dParams[param][1].lower() == 'int':
+                value = int(
+                    max(
+                        min(value, self.dParams[param][3]),
+                        self.dParams[param][2]
+                    )
+                )
+            elif self.dParams[param][1].lower() == 'float':
+                value = max(
+                    min(value, self.dParams[param][3]),
+                    self.dParams[param][2]
+                )
+            elif self.dParams[param][1].lower() == 'bool':
+                if value not in [True, False]:
+                    if value == 0:
+                        value = False
+                    else:
+                        value = True
             self.dParams.update({param: [value                  ,
                                         self.dParams[param][1]  ,
                                         self.dParams[param][2]  ,
@@ -373,46 +438,110 @@ class Calibrator(object):
         return self.run_cycle(),
 
 
+    # Define the mutation operator
+    def mutate_individual(self, individual, indpb):
+        rospy.loginfo("MUT INIT: Individual is: {}".format(individual))
+        for i, param in enumerate(self.dParams.keys()):
+            if self.dParams[param][1].lower() == 'float':
+                individual[i] += random.gauss(0, 0.1)
+                # Ensure the value stays within the bounds
+                individual[i] = max(
+                    min(individual[i], self.dParams[param][3]),
+                    self.dParams[param][2]
+                )
+                rospy.loginfo(
+                    'MUTFLOAT: {} param - {} contents - {} mut value'
+                    .format(param, self.dParams[param], individual[i])
+                )
+            elif self.dParams[param][1].lower() == 'int':
+                if random.random() < indpb:
+                    individual[i] += random.randint(-1, 1)
+                    # Ensure the value stays within the bounds
+                    individual[i] = int(
+                        max(
+                            min(individual[i], self.dParams[param][3]),
+                            self.dParams[param][2]
+                        )
+                    )
+                    rospy.loginfo(
+                        'MUTINT: {} param - {} contents - {} mut value'
+                        .format(param, self.dParams[param], individual[i])
+                    )
+                else:
+                    rospy.loginfo(
+                        "MUTINT: Param {} - {} - not muted {}"
+                        .format(param, self.dParams[param], individual[i])
+                    )
+            elif self.dParams[param][1].lower() == 'bool':
+                if random.random() < indpb:
+                    individual[i] = not individual[i]
+        rospy.loginfo("MUT END: Individual is: {}".format(individual))
+        return individual,
+
+
     def optimize_parameters(self):
         # Define the fitness function as minimizing
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        
+        creator.create("FitnessMin", base.Fitness, weights = (-1.0,))
+
         # Define the individual as a list with the fitness attribute
-        creator.create("Individual", list, fitness=creator.FitnessMin)
-        
+        creator.create("Individual", list, fitness = creator.FitnessMin)
+
         self.get_parameters_from_yaml()
-        
+
         toolbox = base.Toolbox()
-        
+
         self.set_search_space(toolbox = toolbox)
-        
+
         # Collect attribute names dynamically
-        attributes = [getattr(toolbox, "attr_{}".format(param)) for param in self.dParams.keys()]
-        
-        # Structure initializer: define the structure of an individual and the population
-        toolbox.register("individual", tools.initCycle, creator.Individual, attributes, n=1)
-        toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-        
-        
+        attributes = [
+            getattr(toolbox, "attr_{}".format(param)) \
+            for param in self.dParams.keys()
+        ]
+
+        # Define the structure of an individual and the population
+        toolbox.register(
+            "individual",
+            tools.initCycle,
+            creator.Individual,
+            attributes,
+            n = 1
+        )
+        toolbox.register(
+            "population",
+            tools.initRepeat,
+            list,
+            toolbox.individual
+        )
+
+        # Define the target function
         toolbox.register("evaluate", self.target_function)
+
+        # Define the recombination method for parent individuals
         toolbox.register("mate", tools.cxBlend, alpha = 0.5)
-        toolbox.register("mutate", tools.mutGaussian, mu = 0, sigma = 1, indpb = 0.2)
+
+        # Define the mutation algorithms
+        toolbox.register("mutate", self.mutate_individual, indpb = 0.2)
+
+        # Define the selection criteria by tournament of 3 individuals
         toolbox.register("select", tools.selTournament, tournsize = 3)
-        
-        population = toolbox.population(n = self.launchParams["Population_Size"])
-        
+
+        population = toolbox.population(
+            n = self.launchParams["Population_Size"]
+        )
+
         # Define the probabilities of mating and mutation
         cxpb, mutpb = 0.5, 0.2
-        
+
         # Statistics to gather during the evolution
         stats = tools.Statistics(lambda ind: ind.fitness.values)
         stats.register("avg", np.mean)
         stats.register("std", np.std)
         stats.register("min", np.min)
         stats.register("max", np.max)
-        
+
         # Hall of Fame to store the best individuals
         hof = tools.HallOfFame(1)
+
         # Run the evolutionary algorithm
         algorithms.eaSimple(
             population,
