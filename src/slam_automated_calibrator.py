@@ -188,10 +188,8 @@ class Calibrator(object):
                 )
                 return
             rospy.loginfo(
-                "Sarch space parameter {} as {}".format(
-                    sParamName,
-                    self.dParams[sParamName][1].lower()
-                )
+                "Sarch space parameter {} as {}"
+                .format(sParamName, self.dParams[sParamName][1].lower())
             )
 
 
@@ -277,23 +275,19 @@ class Calibrator(object):
 
 
     def compute_map_metric(self):
-        self.sSLAMMapPath = "{}{}.pgm".format(
-            self.launchParams["MapsPath"], self.MapName
-        )
+        mapsPath          = self.launchParams["MapsPath"]
+        self.sSLAMMapPath = "{}{}.pgm".format(mapsPath, self.MapName)
 
         # Sending ground truth and slam maps paths to the error calculator
-        filePath = "{}MapMetricVariables.txt".format(
-            self.launchParams["MapsPath"]
-        )
+        filePath = "{}MapMetricVariables.txt".format(mapsPath)
         with open(filePath, "w") as mmv:
             mmv.write("GTMapPath={}\n".format(self.sGTMapPath))
             mmv.write("SLAMMapPath={}\n".format(self.sSLAMMapPath))
             mmv.close()
 
         # Running the error calculator
-        self.sMapMetricFile = "{}map_accuracy.py".format(
-            self.launchParams["ThisNodeSrcPath"]
-        )
+        srcPath             = self.launchParams["ThisNodeSrcPath"]
+        self.sMapMetricFile = "{}map_accuracy.py".format(srcPath)
         process = subprocess.Popen(
             "'{}'".format(self.sMapMetricFile),
             shell = True
@@ -302,9 +296,7 @@ class Calibrator(object):
 
         # Reading the error
         try:
-            filePath = "{}MapMetricVariables.txt".format(
-                self.launchParams["MapsPath"]
-            )
+            filePath = "{}MapMetricVariables.txt".format(mapsPath)
             with open(
                 filePath, "r") as mmv:
                 for line in mmv.readlines():
@@ -335,14 +327,12 @@ class Calibrator(object):
         date = (
             datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p").replace(":","_")
         )
-        self.MapName = (
-            "{}_Trial_{}_RobotsQty_{}_Map_{}".format(
+        self.MapName = "{}_Trial_{}_RobotsQty_{}_Map_{}".format(
                 self.launchParams["SLAMName"],
                 self.iActualCycle,
                 self.launchParams["RobotsQty"],
                 date
             )
-        )
         sPath = "{}{}".format(self.launchParams["MapsPath"], self.MapName)
         process = (
             subprocess.Popen(
@@ -393,9 +383,8 @@ class Calibrator(object):
         self.record_errors()                                                    # Record the errors into log files
         self.kill_all_non_gazebo_nodes()
         rospy.loginfo(
-            "Killing all non-gazebo nodes for cycle {}".format(
-                self.iActualCycle
-            )
+            "Killing all non-gazebo nodes for cycle {}"
+            .format(self.iActualCycle)
         )
         self.iActualCycle += 1
         return self.fActualMapError # , self.lAPETopicReadings
@@ -555,11 +544,12 @@ class Calibrator(object):
         )
 
         # Print the best solution found
-        print("Best individual is: ", hof[0])
-        print("With fitness: ", hof[0].fitness.values[0])
-        for element in hof:
-            print("Other exceptional elements:")
-            print(element)
+        rospy.loginfo("Best individual is: {}".format(hof[0]))
+        rospy.loginfo("With fitness: {}".format(hof[0].fitness.values[0]))
+        rospy.loginfo("\nOther individuals, from best to worst:")
+        for element in hof[1:]:
+            rospy.loginfo(element)
+            rospy.loginfo("With fitness: {}".format(element.fitness.values[0]))
 
 
     def validate_parameters(self, iTrialsQty):
