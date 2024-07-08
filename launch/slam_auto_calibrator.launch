@@ -12,8 +12,8 @@
   <!-- Test approach arguments-->
   <arg name="Run_Type"              default="Optimization" />                   <!-- Optimization / Validation -->>
   <arg name="Validation_Trials_Qty" default="30"           />
-  <arg name="Population_Size"       default="50"           />
-  <arg name="Generations_Qty"       default="4"            />
+  <arg name="Population_Size"       default="20"           />
+  <arg name="Generations_Qty"       default="7"            />
 
   <!-- Paths  arguments -->
   <arg name="This_Node_src_Path" default="/home/cerlabrob/catkin_ws/src/slam_auto_calibrator/src/"                              />

@@ -133,9 +133,14 @@ file.close()
 MapMetric = MapAccuracy()
 MapMetric.set_ground_truth_map(GTMapPath)
 MapMetric.set_slam_generated_map(SLAMMapPath)
+
+print("Pre processing ground truth map")
 MapMetric.pre_process_ground_truth_map()
+
+print("Pre processing slam generated map")
 MapMetric.pre_process_slam_generated_map()
 
+print("Computing map error metric")
 fError = MapMetric.compute_map_error()
 
 # -- Save the map error into the output file
