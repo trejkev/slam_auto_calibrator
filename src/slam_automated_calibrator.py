@@ -30,9 +30,13 @@ SOFTWARE.
 # General libraries
 import rospy
 import subprocess
+import sys
 import time
 import os
 import random
+import rosnode
+from rosgraph_msgs.msg import Log
+from roscpp.srv import SetLoggerLevel, SetLoggerLevelRequest
 import numpy as np
 from datetime import datetime
 
@@ -46,11 +50,11 @@ from deap import creator
 from deap import tools
 
 # Global Variables
-NODE_INITIALIZATION_WAIT_TIME_SEC           = 60  # Wait time for node initialization
-NODES_KILLER_WAIT_TIME_SEC                  = 10  # Wait time for killing nodes
-WATCHDOG_WAIT_TIME_SEC                      = 5   # Wait time for watchdog
-CYCLE_WAIT_TIME                             = 32  # Wait time per cycle
-NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC = 10  # Wait time for navigation algorithms wake up
+NODE_INITIALIZATION_WAIT_TIME_SEC           = 30  # Wait time for node initialization
+NODES_KILLER_WAIT_TIME_SEC                  = 10  # Wait time between the kill of each node
+WATCHDOG_WAIT_TIME_SEC                      = 5   # Wait time for cycle completion watchdog
+CYCLE_WAIT_TIME                             = 60  # Wait time before starting a new cycle
+NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC = 40  # Wait time for navigation algorithms wake up
 
 # Params into slam_auto_calibrator.launch
 lParamsList = [
@@ -75,9 +79,9 @@ class Calibrator(object):
         }
 
         # Create the lists that will store the APE results
-        robotsQty = self.launchParams["RobotsQty"]
-        self.lAPETopicReadings = list(range(2 * robotsQty))
-        self.lAPETopics = list(range(robotsQty))
+        # robotsQty = self.launchParams["RobotsQty"]
+        self.lAPETopicReadings = [0, 0]
+        self.lAPETopic         = [0]
 
         # Path to the ground truth file
         self.sGTMapPath = self.launchParams["MapsPath"] + \
@@ -89,21 +93,17 @@ class Calibrator(object):
 
     def node_initialization(self):
         """Initialize ROS node and launch the required processes."""
-        self.kill_all_nodes()  # Ensure we have a fresh start without unwanted nodes
+
         rospy.init_node('slam_auto_calibrator')
 
         rospy.loginfo("Launch params are: {}".format(self.launchParams))
 
-        # Open the arena with the robot(s)
-        subprocess.Popen(
-            "roslaunch slam_auto_calibrator {}".format(self.launchParams["RobotsLaunchName"]),
-            shell = True
-        )
         time.sleep(NODE_INITIALIZATION_WAIT_TIME_SEC)
 
 
     def get_parameters_from_yaml(self):
         """Read parameters from YAML file and store them in a dictionary."""
+
         fParamsFile = open(self.launchParams["ParamsFilePath"], 'r')
         with open(self.launchParams["ParamsFilePath"], 'r') as fParamsFile:
             for line in fParamsFile:
@@ -124,9 +124,18 @@ class Calibrator(object):
                         minVal = float(minVal)
                         maxVal = float(maxVal)
                     elif typeVar == "bool":
-                        value  = value
-                        minVal = False
-                        maxVal = True
+                        if str(value).lower() == "false":
+                            value = False
+                        else:
+                            value = True
+                        if str(minVal).lower() == "false":
+                            minVal = False
+                        else:
+                            minVal = True
+                        if str(maxVal).lower() == "true":
+                            maxVal = True
+                        else:
+                            maxVal = False
                     else:
                         rospy.logerr("Parameter type {} not supported".format(typeVar))
                         continue
@@ -136,9 +145,14 @@ class Calibrator(object):
 
     def set_parameters_on_yaml(self):
         """Write parameters from the dictionary to the YAML file."""
+
         with open(self.launchParams["ParamsFilePath"], 'w') as fParamsFile:
             for param, contents in self.dParams.items():
                 value, typeVar, minVal, maxVal = contents
+                if typeVar.lower() == "bool":
+                    value  = str(value).lower()
+                    minVal = str(minVal).lower()
+                    maxVal = str(maxVal).lower()
                 fParamsFile.write(
                     "{}: {} #{} #min={} #max={}\n".format(param, value, typeVar, minVal, maxVal)
                 )
@@ -146,6 +160,7 @@ class Calibrator(object):
 
     def set_search_space(self, toolbox):
         """Define the search space for the genetic algorithm."""
+
         for sParamName, values in self.dParams.items():
             param_type = values[1].lower()
             iMin, iMax = values[2], values[3]
@@ -163,67 +178,61 @@ class Calibrator(object):
 
     def ape_reader(self, data):
         """Read APE data and update topic readings."""
-        prefix    = self.launchParams["RobotsPronoun"]
-        robotsQty = self.launchParams["RobotsQty"]
-        
-        for i in range(robotsQty):
-            if data.frame_id == "{}{}".format(prefix, i):
-                self.lAPETopicReadings[i] = data.translation_error_mean
-                self.lAPETopicReadings[i + robotsQty] = data.rotation_error_mean
-                break  # Exit loop once data is processed for the correct robot
+
+        self.lAPETopicReadings[0] = data.translation_error_mean
+        self.lAPETopicReadings[1] = data.rotation_error_mean
 
 
     def kill_all_nodes(self):
         """Kill all Gazebo and ROS nodes for a clean start."""
+
         # Killing all gazebo processes that may be open
         for procToKill in ["gazebo", "gzserver", "gzclient"]:
             process = subprocess.Popen("killall -9 {}".format(procToKill), shell = True)
             process.wait()
+            rospy.loginfo("Killed {}".format(procToKill))
 
         # Kill all nodes except for rosout and this node for a clean start
         nodes = os.popen("rosnode list").readlines()
         nodes = [node.strip() for node in nodes]
         for node in nodes:
             if 'rosout' not in node and 'slam_auto_calibrator' not in node:
-                os.system("rosnode kill {}".format(node))
-
+                try:
+                    process = subprocess.Popen("rosnode kill {}".format(node), shell = True)
+                    process.wait()
+                    # rosnode.kill_nodes([node])
+                    rospy.loginfo("Killed {}".format(node))
+                except rosnode.ROSNodeIOException as e:
+                    rospy.loginfo("Failed to kill node {}: {}".format(node, e))
+        # Run rosnode cleanup and provide 'y' as confirmation
+        process = subprocess.Popen(
+            ['rosnode', 'cleanup'], stdin = subprocess.PIPE,
+            stdout = subprocess.PIPE, stderr = subprocess.PIPE
+        )
+        stdout, stderr = process.communicate(input=b'y\n')
+        process.wait()
         time.sleep(NODES_KILLER_WAIT_TIME_SEC)
+        rospy.loginfo(
+            "Remaining nodes after kill all: {}".format(os.popen("rosnode list").readlines())
+        )
 
 
-    def kill_all_non_gazebo_nodes(self):
-        """Kill the SLAM algorithms and their related nodes."""
-        nodes = os.popen("rosnode list").readlines()
-        nodes = [node.strip() for node in nodes]
-        for node in nodes:
-            if any(substring in node for substring in [
-                'rviz', 'map_merge', 'map_saver', 'turtlebot3_slam', 'APE']):
-                os.system("rosnode kill {}".format(node))
-                rospy.loginfo(
-                    "Cycle {} completed: rosnode kill {}"
-                    .format(self.iActualCycle, node)
-                )
-                time.sleep(NODES_KILLER_WAIT_TIME_SEC)
-
-
-    def record_errors(self):
+    def record_errors(self, bFailedSetup = False):
         """Log the errors for map and robot APE readings."""
+
+        if bFailedSetup == True:
+            rospy.loginfo("ME_C{}: 999999".format(self.iActualCycle))
+            rospy.loginfo("Rob0_TE_C{}: 999999".format(self.iActualCycle))
+            rospy.loginfo("Rob0_RE_C{}: 999999".format(self.iActualCycle))
+            return
         rospy.loginfo("ME_C{}: {}".format(self.iActualCycle, self.fActualMapError))
-        for robot in range(self.launchParams["RobotsQty"]):
-            rospy.loginfo(
-                "Rob{}_TE_C{}: {}".format(
-                    robot, self.iActualCycle, self.lAPETopicReadings[robot]
-                )
-            )
-            readingIndex = robot + self.launchParams["RobotsQty"]
-            rospy.loginfo(
-                "Rob{}_RE_C{}: {}".format(
-                    robot, self.iActualCycle, self.lAPETopicReadings[readingIndex]
-                )
-            )
+        rospy.loginfo("Rob0_TE_C{}: {}".format(self.iActualCycle, self.lAPETopicReadings[0]))
+        rospy.loginfo("Rob0_RE_C{}: {}".format(self.iActualCycle, self.lAPETopicReadings[1]))
 
 
     def compute_map_metric(self):
         """Compute the map metric by comparing SLAM and ground truth maps."""
+
         mapsPath          = self.launchParams["MapsPath"]
         self.sSLAMMapPath = "{}{}.pgm".format(mapsPath, self.MapName)
 
@@ -246,15 +255,70 @@ class Calibrator(object):
                 for line in mmv.readlines():
                     self.fActualMapError = float(line.split("=")[1])
             return self.fActualMapError
-        except:
-            rospy.logerr("Map file {} too large".format(self.iActualCycle))
-            return "NA"  # SLAM map file too large
+        except Exception as error:
+            error = str(error)
+            rospy.logerr("Error '{}' during cycle {}".format(error, self.iActualCycle))
+            return "NA"
+
+    def test_node_connection(self, node, bIsSlam = False):
+        """Pings a single node to check if it is responsive or not."""
+
+        if bIsSlam == True:
+            node = "/slam_{}".format(node)
+        process = subprocess.Popen(
+            ['rosnode', 'ping', node, '-c', '1'],
+            stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        output = stdout + stderr
+        output = output.decode('utf-8')
+        if "connection refused" in output:
+            rospy.logerr("Node {} is unresponsive".format(node))
+            rospy.logerr(output)
+            return False
+        return True
+    
+    def cycle_base_launching(self):
+        """Launches a fresh session with the required trial nodes."""
+
+        # Launch the SLAM algorithms and the automatic navigator
+        rospy.loginfo("Killing all nodes before cycle {}".format(self.iActualCycle))
+        self.kill_all_nodes()
+
+        subprocess.Popen("roslaunch slam_auto_calibrator calibrator_nodes.launch", shell = True)
+        time.sleep(CYCLE_WAIT_TIME)
+
+        self.lAPETopic[0] = rospy.Subscriber(
+            self.launchParams["APETopicName"], APE, self.ape_reader
+        )
+        rospy.loginfo("Subscribed to {}".format(self.launchParams["APETopicName"]))
+        time.sleep(NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC)
 
 
     def cycle_completion_watchdog(self):
         """Watchdog to monitor completion of ROS nodes."""
+
         bRunCompleted = False
         while not bRunCompleted:
+            # Check if SLAM algorithm is alive
+            response = self.test_node_connection(
+                node = self.launchParams["SLAMName"], bIsSlam = True
+            )
+            if response == False:
+                return False
+            if self.bFirstWatch == True:
+                self.bFirstWatch = False
+                #Check if Gazebo and Rviz are alive
+                for critical in ["/gazebo", "/gazebo_gui", "/rviz"]:
+                    response = self.test_node_connection(node = critical)
+                    if response == False:
+                        rospy.logerr("Restarting...")
+                        self.cycle_base_launching()
+                        self.bFirstWatch = True
+                        break
+                    else:
+                        rospy.loginfo("{} node is responsive for the trial".format(critical))
+            
+            # Check if speed controller is alive
             nodes = os.popen("rosnode list").readlines()
             nodes = [node.strip() for node in nodes]
             bFoundSpeedController = False
@@ -265,10 +329,12 @@ class Calibrator(object):
             if not bFoundSpeedController:
                 bRunCompleted = True
             time.sleep(WATCHDOG_WAIT_TIME_SEC)
+        return True
 
 
     def generate_map(self):
         """Generate a map with a timestamped filename."""
+
         date = (datetime.now().strftime("%Y_%m_%d-%I:%M:%S_%p").replace(":","_"))
         self.MapName = "{}_Trial_{}_RobotsQty_{}_Map_{}".format(
             self.launchParams["SLAMName"],
@@ -277,43 +343,31 @@ class Calibrator(object):
             date
         )
         sPath = "{}{}".format(self.launchParams["MapsPath"], self.MapName)
+        rospy.loginfo("Running map saver for {}".format(sPath))
         process = subprocess.Popen(
             "rosrun map_server map_saver -f {}".format(sPath), shell = True
         )
         process.wait()
+        rospy.loginfo("Completed map saver for {}".format(sPath))
         return self.MapName
 
 
     def run_cycle(self):
         """Run a cycle of SLAM calibration and map generation."""
-        time.sleep(CYCLE_WAIT_TIME)
 
-        # Launch the SLAM algorithms and the automatic navigator
-        subprocess.Popen(
-            "roslaunch {} {}".format(
-                self.launchParams["SelfPackageName"],
-                self.launchParams["SLAMLaunchName"]
-            ),
-            shell = True
-        )
-        time.sleep(NAVIGATION_ALGORITHMS_WAKE_UP_WAIT_TIME_SEC)
+        self.cycle_base_launching()
 
-        # Subscribe to APE topics for each robot
-        for iRobot in range(self.launchParams["RobotsQty"]):
-            sTopic = "/{}{}/{}".format(
-                self.launchParams["RobotsPronoun"],
-                str(iRobot),
-                self.launchParams["APETopicName"]
-            )
-            self.lAPETopics[iRobot] = rospy.Subscriber(
-                sTopic, APE, self.ape_reader
-            )
-            rospy.loginfo("Subscribed to {}".format(sTopic))
-
-        rospy.loginfo("Starting lap {}".format(self.iActualCycle))    
-        self.cycle_completion_watchdog()  # Wait for the robots to complete their lap
+        rospy.loginfo("Starting lap {}".format(self.iActualCycle))
+        # Wait for the robots to complete their lap
+        self.bFirstWatch = True
+        if (self.cycle_completion_watchdog() == False):
+            rospy.loginfo("SLAM failed connection, configuration makes it crash")
+            self.record_errors(True)
+            self.iActualCycle += 1
+            return 99999999
 
         rospy.loginfo("Completed lap {}".format(self.iActualCycle))
+
         rospy.loginfo("Running map generator for cycle {}".format(self.iActualCycle))
         self.generate_map()  # Generate the SLAM map as pgm image
 
@@ -323,15 +377,13 @@ class Calibrator(object):
         rospy.loginfo("Running errors recorder for cycle {}".format(self.iActualCycle))
         self.record_errors()  # Record the errors into log files
 
-        rospy.loginfo("Killing all non-gazebo nodes for cycle {}".format(self.iActualCycle))
-        self.kill_all_non_gazebo_nodes()
-
         self.iActualCycle += 1
         return self.fActualMapError  # Return the map error for optimization
 
 
     def target_function(self, individual):
         """Target function for the genetic algorithm optimization."""
+
         # Update parameters based on individual
         params = {
             param: individual[i] for i, param in enumerate(self.dParams.keys())
@@ -357,6 +409,7 @@ class Calibrator(object):
 
     def mutate_individual(self, individual, indpb):
         """Mutate an individual for evolutionary optimization."""
+
         rospy.loginfo("MUTATION INIT: Individual is: {}".format(individual))
         for i, param in enumerate(self.dParams.keys()):
             if self.dParams[param][1].lower() == 'float':
@@ -403,6 +456,7 @@ class Calibrator(object):
 
     def optimize_parameters(self):
         """Optimize SLMM parameters using an evolutionary algorithm."""
+
         # Define the fitness function as minimizing
         creator.create("FitnessMin", base.Fitness, weights = (-1.0,))
 
@@ -472,12 +526,25 @@ class Calibrator(object):
             rospy.loginfo("{}: {}".format(param, value))
         rospy.loginfo("With fitness: {}".format(best_fitness))
         rospy.loginfo("PARAMS VALIDATION FOR 30 TRIALS")
+        self.iActualCycle = 0
         for _ in range(30):
             self.target_function(individual = hof[0])
 
 
     def validate_parameters(self, iTrialsQty):
         """Validate optimized parameters through multiple trials."""
+
+        # Run optimized params iTrialsQty times
+        rospy.loginfo("Running with optimized parameters {} times".format(iTrialsQty))
+        self.get_parameters_from_yaml()
+        rospy.loginfo(self.dParams)
+        for _ in range(iTrialsQty):
+            self.run_cycle()
+
+
+    def validate_parameters(self, iTrialsQty):
+        """Validate optimized parameters through multiple trials."""
+
         # Run optimized params iTrialsQty times
         rospy.loginfo("Running with optimized parameters {} times".format(iTrialsQty))
         self.get_parameters_from_yaml()
@@ -522,5 +589,8 @@ if __name__ == "__main__":
         calibrator.validate_parameters(iValTrials)
 
     # Clean background jobs
-    calibrator.kill_all_nodes()      
-    os.system("rosnode kill slam_auto_calibrator")
+    calibrator.kill_all_nodes()
+    try:
+        rosnode.kill_nodes(['slam_auto_calibrator'])
+    except rosnode.ROSNodeIOException as e:
+        rospy.loginfo("Failed to kill node slam_auto_calibrator: {}".format(e))
