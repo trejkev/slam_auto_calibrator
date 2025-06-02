@@ -396,7 +396,13 @@ class Calibrator(object):
             elif self.dParams[param][1].lower() == 'float':
                 value = max(min(value, self.dParams[param][3]), self.dParams[param][2])
             elif self.dParams[param][1].lower() == 'bool':
-                value = bool(value)
+                if isinstance(value, str):
+                    if value.strip().lower() in ["1", "true"]:
+                        value = True
+                    else:
+                        value = False
+                elif isinstance(value, float) or isinstance(value, int):
+                    value = value >= 0.5
             self.dParams.update({param: [value                  ,
                                         self.dParams[param][1]  ,
                                         self.dParams[param][2]  ,
