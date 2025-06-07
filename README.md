@@ -1,4 +1,4 @@
-# SLAM Automated Calibrator Using Tree-Structured Parzen Estimators via Hyperpot
+# SLAM Automated Calibrator Using Tree-Structured Parzen Estimators via Hyperopt
 
 This ROS node can perform automated external calibration of a SLAM algorithm's map accuracy, being managed by a set of robots collaborating between them, or a single robot (it will depend on the .launch files setup), and using the humongous power that Bayesian optimization, specifically the _Tree-Structured Parzen Estimators algorithm_ provides.
 
