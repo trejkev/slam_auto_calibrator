@@ -1,5 +1,6 @@
-# SLAM Automatic Calibrator
-This ROS node can perform automated external calibration of a SLAM algorithm's map accuracy, being managed by a set of robots collaborating between them, or a single robot (it will depend on the .launch files setup), and using the humongous power that Bayesian optimization provides.
+# SLAM Automated Calibrator using Genetic Algorithms vis DEAP
+
+This ROS node can perform automated external calibration of a SLAM algorithm's map accuracy, being managed by a set of robots collaborating between them, or a single robot (it will depend on the .launch files setup), and using the humongous power that Genetic Algorithms provide. It makes use of DEAP library, with the eaSimple method, which implements a simple but powerful genetic algorithm.
 
 An output example can be seen in the figure below, where we made a simulated arena with 3  TurtleBot3 robots (left side figure), started with default parameters to show their resulting map (central figure), and ended with a set of parameters that hugely optimized the resulting map (right side figure) in a relatively short number of optimization trials, compared to a full-factorial experiment, that may be required to configure the algorithm in discrete and limited parameters steps.
 
@@ -7,20 +8,21 @@ An output example can be seen in the figure below, where we made a simulated are
   <img src="https://github.com/trejkev/slam_auto_calibrator/assets/18760154/0f1bb290-76bc-4294-99a4-3105c1c39320" width="800" />
 </p>
 
-The tool uses hyperopt, a Python library implementing Tree-Structured Parzen Estimators (a statistical variant that Bayesian optimization could use), to try to converge to the set of params that maximizes an output function result. 
+The tool uses DEAP, a Python library implementing a simple genetic algorithm, to try to converge to the set of params that maximizes an output function result. 
 
 ## Dependencies
 1. ROS Melodic (ROS1)
 2. Python 2.7
 4. Gazebo
 5. Rviz
-6. Hyperopt 0.2.2
+6. deap 1.4.1
 
 ## Steps to use the node:
 1. Into _slam_auto_calibrator.launch_, set the variables needed to run the optimization or validation algorithm, most of them are mandatory.
-2. Into _multi_robot_in_world.launch_, set the environment with the robots to be used.
-3. Into the _slam_launcher.launch_, set the variables needed to run the SLAM algorithms desired per robot, and the navigation algorithm to be used.
-4. Start _roscore_ in a shell, and then, run the node in another shell by using the command _roslaunch slam_auto_calibrator slam_auto_calibrator.launch_.
+2. Into _single_robot_in_world.launch_, set the environment with the robot to be used.
+3. Into the _slam_launcher.launch_, set the variables needed to run the SLAM algorithms desired, and the navigation algorithm to be used.
+4. Make sure nav node points.py has the correct points to target, and also points to your robot, according to the Coordinates_Dictionary variable into _slam_launcher.launch_ file.
+5. Start _roscore_ in a shell, and then, run the node in another shell by using the command _roslaunch slam_auto_calibrator slam_auto_calibrator.launch_.
 
 ## SLAM Auto Calibrator Parameters description
 Into slam_auto_calibrator.launch reside the most important parameters to make the automated optimization algorithm work, those are described below.
