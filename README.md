@@ -19,7 +19,7 @@ The tool uses hyperopt, a Python library implementing Tree-Structured Parzen Est
 ## Steps to use the node:
 1. Into _slam_auto_calibrator.launch_, set the variables needed to run the optimization or validation algorithm, most of them are mandatory.
 2. Into _multi_robot_in_world.launch_, set the environment with the robots to be used.
-3. Into the _slam_launcher.launch_, set the variables needed to run the SLAM algorithms desired per robot, and the navigation algorithm to be used.
+3. Into the _slam_launcher_multi_robot.launch_, set the variables needed to run the SLAM algorithms desired per robot, and the navigation algorithm to be used.
 4. Start _roscore_ in a shell, and then, run the node in another shell by using the command _roslaunch slam_auto_calibrator slam_auto_calibrator.launch_.
 
 ## SLAM Auto Calibrator Parameters description
