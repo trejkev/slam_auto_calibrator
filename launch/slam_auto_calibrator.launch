@@ -4,7 +4,7 @@
   <arg name="Robots_Quantity"       default="3"                           />
   <arg name="Robots_Launch_Name"    default="multi_robot_in_world.launch" />
   <arg name="Self_Package_Name"     default="slam_auto_calibrator"        />
-  <arg name="SLAM_Launch_Name"      default="slam_launcher.launch"        />
+  <arg name="SLAM_Launch_Name"      default="slam_launcher_multi_robot.launch"        />
   <arg name="APE_Topic_Name"        default="APE"                         />
   <arg name="Robots_Pronoun"        default="tb3_"                        />
   <arg name="Ground_Truth_Filename" default="Ground_Truth_Image.png"      />

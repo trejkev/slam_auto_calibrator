@@ -371,10 +371,12 @@ class Calibrator(object):
 
     def optimize_parameters(self):
         best = fmin(
-            self.target_function,
-            self.dSpace,
-            algo = tpe.suggest,
-            max_evals = self.iTrainingCycles
+            fn            = self.target_function,
+            space         = self.dSpace,
+            algo          = tpe.suggest,
+            max_evals     = self.iTrainingCycles,
+            verbose       = 1,
+            return_argmin = False # Returns space_eval values
         )
         rospy.loginfo("---- BEST SETUP IS ----")
         rospy.loginfo(best)
