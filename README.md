@@ -1,5 +1,6 @@
-# SLAM Automatic Calibrator
-This ROS node can perform automated external calibration of a SLAM algorithm's map accuracy, being managed by a set of robots collaborating between them, or a single robot (it will depend on the .launch files setup), and using the humongous power that Bayesian optimization provides.
+# SLAM Automated Calibrator Using Tree-Structured Parzen Estimators via Hyperpot
+
+This ROS node can perform automated external calibration of a SLAM algorithm's map accuracy, being managed by a set of robots collaborating between them, or a single robot (it will depend on the .launch files setup), and using the humongous power that Bayesian optimization, specifically the _Tree-Structured Parzen Estimators algorithm_ provides.
 
 An output example can be seen in the figure below, where we made a simulated arena with 3  TurtleBot3 robots (left side figure), started with default parameters to show their resulting map (central figure), and ended with a set of parameters that hugely optimized the resulting map (right side figure) in a relatively short number of optimization trials, compared to a full-factorial experiment, that may be required to configure the algorithm in discrete and limited parameters steps.
 
