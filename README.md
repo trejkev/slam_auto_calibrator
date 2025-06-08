@@ -1,4 +1,4 @@
-# SLAM Automated Calibrator using Genetic Algorithms vis DEAP
+# SLAM Automated Calibrator using a Genetic Algorithm via DEAP
 
 This ROS node can perform automated external calibration of a SLAM algorithm's map accuracy, being managed by a set of robots collaborating between them, or a single robot (it will depend on the .launch files setup), and using the humongous power that Genetic Algorithms provide. It makes use of DEAP library, with the eaSimple method, which implements a simple but powerful genetic algorithm.
 
