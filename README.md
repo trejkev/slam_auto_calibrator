@@ -70,3 +70,93 @@ However, to be able to use an optimization algorithm, there was a need to tell w
   <img src="https://github.com/trejkev/slam_auto_calibrator/assets/18760154/f5cd020d-0f33-4b93-8fd3-ca91142c06bf" width="800" />
 </p>
 
+  ## Pseudocode of the Artifact
+
+  In general, the code follows the pseudocode below, which is a very simplified version of what it does.
+
+      FUNCTION run_cycle()
+        LAUNCH SLAM algorithm
+
+        SUBSCRIBE to each robot APE topic
+    
+        LOG "Starting lap" currentCycle
+    
+        CALL cycle_completion_watchdog()  // waits until lap finishes
+    
+        LOG "Completed lap" currentCycle
+    
+        LOG "Generating map for cycle" currentCycle
+        CALL generate_map()
+    
+        LOG "Computing map metric for cycle" currentCycle
+        CALL compute_map_metric()
+    
+        LOG "Recording errors for cycle" currentCycle
+        CALL record_errors()
+    
+        CALL kill_all_non_gazebo_nodes()  // cleanup for next cycle, leaving only the simulated environment
+    
+        RETURN currentMapError
+    END FUNCTION
+    
+    
+    FUNCTION target_function(params_dict)
+        FOR EACH param_key IN params_dict.keys() DO
+            UPDATE internal_parameters[param_key][value] = params_dict[param_key]
+        END FOR
+    
+        LOG "Current run params:" internal_parameters
+    
+        CALL set_parameters_on_yaml()  // update SLAM's YAML with new parameters
+    
+        RETURN run_cycle()
+    END FUNCTION
+    
+    
+    FUNCTION optimize_parameters()
+        CALL fmin with:
+            fn = target_function
+            search_space = parameter_space
+            algo = TPE
+            max_evals = training_cycles
+            verbose = True
+            return_argmin = False
+    
+        LOG "---- BEST SETUP IS ----"
+        LOG best_parameters_from_fmin
+        LOG "---- BEST SETUP IS ----"
+    END FUNCTION
+    
+    
+    FUNCTION validate_parameters(trials_count)
+        LOG "Running validation for" trials_count "trials"
+        CALL get_parameters_from_yaml()  // load optimized params
+    
+        FOR i = 1 TO trials_count DO
+            CALL run_cycle()
+        END FOR
+    END FUNCTION
+    
+    
+    MAIN
+        CREATE calibrator_instance
+    
+        GET run_type = ROS_PARAM("/RunType")
+    
+        IF run_type == "optimization" THEN
+            LOG "RUNNING OPTIMIZATION"
+            calibrator_instance.optimize_parameters()
+        ELSE IF run_type == "validation" THEN
+            LOG "RUNNING VALIDATION"
+            GET validation_trials = ROS_PARAM("/ValidationTrialsQty")
+            calibrator_instance.validate_parameters(validation_trials)
+        ENDIF
+    
+        calibrator_instance.kill_all_nodes()
+    
+        TRY
+            rosnode.kill_nodes(['slam_auto_calibrator'])
+        CATCH exception
+            LOG "Failed to kill node slam_auto_calibrator:", exception
+    END MAIN
+    
