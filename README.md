@@ -74,7 +74,7 @@ However, to be able to use an optimization algorithm, there was a need to tell w
 
   In general, the code follows the pseudocode below, which is a very simplified version of what it does.
 
-      FUNCTION run_cycle()
+    FUNCTION run_cycle()
         LAUNCH SLAM algorithm
 
         SUBSCRIBE to each robot APE topic
