@@ -71,7 +71,9 @@ However, to be able to use an optimization algorithm, there was a need to tell w
   <img src="https://github.com/trejkev/slam_auto_calibrator/assets/18760154/f5cd020d-0f33-4b93-8fd3-ca91142c06bf" width="800" />
 </p>
 
-In general, the code follows the next pseudocode, which is a very simplified version of what it does.
+## Pseudocode of the Artifact
+
+In general, the code follows the pseudocode below, which is a very simplified version of what it does.
 
     # SLAM Calibration Optimization & Validation - Pseudocode
     
