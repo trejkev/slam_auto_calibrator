@@ -71,3 +71,144 @@ However, to be able to use an optimization algorithm, there was a need to tell w
   <img src="https://github.com/trejkev/slam_auto_calibrator/assets/18760154/f5cd020d-0f33-4b93-8fd3-ca91142c06bf" width="800" />
 </p>
 
+In general, the code follows the next pseudocode, which is a very simplified version of what it does.
+
+    # SLAM Calibration Optimization & Validation - Pseudocode
+    
+    FUNCTION run_cycle()
+        call cycle_base_launching() -> Simulated environment with robot(s) using SLAM
+    
+        LOG "Starting lap" currentCycle
+    
+        WHILE trial_ongoing THEN
+            IF slam_unresponsive THEN
+                LOG "SLAM failed connection, configuration makes it crash"
+                call record_errors(with_error = TRUE) -> Record map errors as humongous values
+                RETURN very_large_map_error_value
+            ENDIF
+        ENDWHILE
+    
+        LOG "Completed lap" currentCycle
+    
+        LOG "Generating map for cycle" currentCycle
+        call generate_map()
+    
+        LOG "Computing map metric for cycle" currentCycle
+        call compute_map_metric()
+    
+        LOG "Recording errors for cycle" currentCycle
+        call record_errors()
+    
+        RETURN current_map_error
+    END FUNCTION
+    
+    ---
+    
+    FUNCTION target_function(individual)
+        FOR EACH param IN parameter_keys DO
+            value = individual[index_of(param)]
+            CLAMP value within param_bounds
+            CONVERT value TO param_type (int, float, bool)
+            UPDATE parameter_dictionary[param] WITH value
+        END FOR
+    
+        LOG "Current run params:" parameters
+        call set_parameters_on_yaml()
+    
+        RETURN run_cycle()
+    END FUNCTION
+    
+    ---
+    
+    FUNCTION mutate_individual(individual, mutation_probability)
+        FOR EACH param IN parameter_keys DO
+            IF param_type == float THEN
+                individual[param_index] += random_gauss(0, 0.1)
+                CLAMP individual[param_index] within bounds
+            ELSE IF param_type == int THEN
+                IF random() < mutation_probability THEN
+                    individual[param_index] += random_int(-1, 1)
+                    CLAMP individual[param_index] within bounds
+                ENDIF
+            ELSE IF param_type == bool THEN
+                IF random() < mutation_probability THEN
+                    individual[param_index] = NOT individual[param_index]
+                ENDIF
+            ENDIF
+        END FOR
+    
+        RETURN individual
+    END FUNCTION
+    
+    ---
+    
+    FUNCTION optimize_parameters()
+        CREATE GA types: FitnessMin, Individual
+    
+        LOAD parameters from YAML
+    
+        INITIALIZE toolbox
+    
+        REGISTER GA attributes based on parameters
+    
+        REGISTER individual and population initialization
+    
+        REGISTER evaluate = target_function
+        REGISTER mate     = blend_crossover(alpha=0.5)
+        REGISTER mutate   = mutate_individual(indpb=0.2)
+        REGISTER select   = tournament_selection(size=3)
+    
+        INITIALIZE population with size from launchParams
+    
+        SET crossover_prob = 0.5
+        SET mutation_prob  = 0.2
+        SET generations    = launchParams["Generations_Qty"]
+    
+        SET statistics collectors (avg, std, min, max)
+        SET hall_of_fame size = 1
+    
+        RUN eaSimple GA with the above settings
+    
+        best_individual = hall_of_fame[0]
+        LOG best_individual and fitness
+    
+        LOG "Validating best parameters for 30 trials"
+        FOR i = 1 TO 30 DO
+            CALL target_function(best_individual)
+        END FOR
+    END FUNCTION
+    
+    ---
+    
+    FUNCTION validate_parameters(trial_count)
+        LOG "Running validation for" trial_count "trials"
+        LOAD parameters from YAML
+        FOR i = 1 TO trial_count DO
+            CALL run_cycle()
+        END FOR
+    END FUNCTION
+    
+    ---
+    
+    MAIN
+        CREATE calibrator_instance
+    
+        GET run_type = ROS_PARAM("/RunType")
+    
+        IF run_type == "optimization" THEN
+            LOG "RUNNING OPTIMIZATION"
+            calibrator_instance.optimize_parameters()
+        ELSE IF run_type == "validation" THEN
+            LOG "RUNNING VALIDATION"
+            GET validation_trials = ROS_PARAM("/ValidationTrialsQty")
+            calibrator_instance.validate_parameters(validation_trials)
+        ENDIF
+    
+        calibrator_instance.kill_all_nodes()
+        TRY
+            rosnode.kill_nodes(['slam_auto_calibrator'])
+        CATCH exception
+            LOG "Failed to kill node slam_auto_calibrator:", exception
+    END MAIN
+
+
