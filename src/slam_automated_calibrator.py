@@ -49,6 +49,10 @@ from deap import base
 from deap import creator
 from deap import tools
 
+# Make sure results can be somehow reproduced
+random.seed(42)
+np.random.seed(42)
+
 # Global Variables
 NODE_INITIALIZATION_WAIT_TIME_SEC           = 30  # Wait time for node initialization
 NODES_KILLER_WAIT_TIME_SEC                  = 10  # Wait time between the kill of each node
@@ -364,7 +368,7 @@ class Calibrator(object):
             rospy.loginfo("SLAM failed connection, configuration makes it crash")
             self.record_errors(True)
             self.iActualCycle += 1
-            return 99999999
+            return (self.fActualMapError, self.lAPETopicReadings[0])
 
         rospy.loginfo("Completed lap {}".format(self.iActualCycle))
 
@@ -378,7 +382,7 @@ class Calibrator(object):
         self.record_errors()  # Record the errors into log files
 
         self.iActualCycle += 1
-        return self.fActualMapError  # Return the map error for optimization
+        return (self.fActualMapError, self.lAPETopicReadings[0])  # Return the map and translation errors for optimization
 
 
     def target_function(self, individual):
@@ -410,7 +414,7 @@ class Calibrator(object):
 
         rospy.loginfo("Current run params: {}".format(self.dParams))
         self.set_parameters_on_yaml()
-        return self.run_cycle(),
+        return self.run_cycle()
 
 
     def mutate_individual(self, individual, indpb):
@@ -419,15 +423,21 @@ class Calibrator(object):
         rospy.loginfo("MUTATION INIT: Individual is: {}".format(individual))
         for i, param in enumerate(self.dParams.keys()):
             if self.dParams[param][1].lower() == 'float':
-                individual[i] += random.gauss(0, 0.1)
-                # Ensure the value stays within the bounds
-                individual[i] = max(
-                    min(individual[i], self.dParams[param][3]), self.dParams[param][2]
-                )
-                rospy.loginfo(
-                    'Float mutation: {} param - {} contents - {} mut value'
-                    .format(param, self.dParams[param], individual[i])
-                )
+                if random.random() < indpb:
+                    individual[i] += random.gauss(0, 0.1)
+                    # Ensure the value stays within the bounds
+                    individual[i] = max(
+                        min(individual[i], self.dParams[param][3]), self.dParams[param][2]
+                    )
+                    rospy.loginfo(
+                        'Float mutation: {} param - {} contents - {} mut value'
+                        .format(param, self.dParams[param], individual[i])
+                    )
+                else:
+                    rospy.loginfo(
+                        "Float mutation: Param {} - {} - not muted {}"
+                        .format(param, self.dParams[param], individual[i])
+                    )
             elif self.dParams[param][1].lower() == 'int':
                 if random.random() < indpb:
                     individual[i] += random.randint(-1, 1)
@@ -464,7 +474,7 @@ class Calibrator(object):
         """Optimize SLMM parameters using an evolutionary algorithm."""
 
         # Define the fitness function as minimizing
-        creator.create("FitnessMin", base.Fitness, weights = (-1.0,))
+        creator.create("FitnessMin", base.Fitness, weights = (-1.0, -1.0))
 
         # Define the individual as a list with the fitness attribute
         creator.create("Individual", list, fitness = creator.FitnessMin)
@@ -491,10 +501,11 @@ class Calibrator(object):
         # Define the mutation algorithms
         toolbox.register("mutate", self.mutate_individual, indpb = 0.2)
 
-        # Define the selection criteria by tournament of 3 individuals
-        toolbox.register("select", tools.selTournament, tournsize = 3)
+        # Define the selection criteria by multiobjective using NSGA-II
+        toolbox.register("select", tools.selNSGA2)
 
-        population = toolbox.population(n = self.launchParams["Population_Size"])
+        pop = toolbox.population(n = self.launchParams["Population_Size"])
+        NGEN = self.launchParams["Generations_Qty"]
 
         # Define the probabilities of mating and mutation
         cxpb, mutpb = 0.5, 0.2
@@ -507,31 +518,63 @@ class Calibrator(object):
         stats.register("max", np.max)
 
         # Hall of Fame to store the best individuals
-        hof = tools.HallOfFame(1)
+        hof = tools.ParetoFront()
 
         # Run the evolutionary algorithm
-        algorithms.eaSimple(
-            population,
-            toolbox,
-            cxpb,
-            mutpb,
-            self.launchParams["Generations_Qty"],
-            stats = stats,
-            halloffame = hof,
-            verbose = True
-        )
+        # Evaluate initial population
+        invalid_ind = [ind for ind in pop if not ind.fitness.valid]
+        fitnesses = map(toolbox.evaluate, invalid_ind)
+        for ind, fit in zip(invalid_ind, fitnesses):
+            ind.fitness.values = fit
+            
+        # Assign the crowding distance to the individuals
+        pop = toolbox.select(pop, len(pop))
 
-        # Print the best solution found
-        best_individual = hof[0]
-        best_params = {
-            param: best_individual[i] for i, param in enumerate(self.dParams.keys())
-        }
-        best_fitness = best_individual.fitness.values[0]
-        rospy.loginfo("Best individual parameters:")
-        for param, value in best_params.items():
-            rospy.loginfo("{}: {}".format(param, value))
-        rospy.loginfo("With fitness: {}".format(best_fitness))
-        rospy.loginfo("PARAMS VALIDATION FOR 30 TRIALS")
+        for gen in range(NGEN):
+            # Select the next generation
+            offspring = tools.selTournamentDCD(pop, len(pop))
+            offspring = [toolbox.clone(ind) for ind in offspring]
+
+            # Apply crossover and mutation
+            for ind1, ind2 in zip(offspring[::2], offspring[1::2]):
+                # Crossover likelyhood of cxpb
+                if np.random.rand() < cxpb:
+                    toolbox.mate(ind1, ind2)
+                # Mutation likelyhood of mutpb
+                if np.random.rand() < mutpb:
+                    toolbox.mutate(ind1)
+                if np.random.rand() < mutpb:
+                    toolbox.mutate(ind2)
+                del ind1.fitness.values
+                del ind2.fitness.values
+
+            # Evaluate the offspring
+            invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+            fitnesses = map(toolbox.evaluate, invalid_ind)
+            for ind, fit in zip(invalid_ind, fitnesses):
+                ind.fitness.values = fit
+                
+            # Combine parents + offspring and select next generation using NSGA-II
+            pop = toolbox.select(pop + offspring, self.launchParams["Population_Size"])
+
+            # Update statistics
+            record = stats.compile(pop)
+            print("Gen {}: {}".format(gen, record))
+
+            # Update Hall of Fame
+            hof.update(pop)
+
+        rospy.loginfo("==== PARETO FRONT RESULTS ====")
+        for i, ind in enumerate(hof):
+            rospy.loginfo("Solution #%d:" % (i + 1))
+            rospy.loginfo("  Objectives (ind.fitness.values): {}".format(ind.fitness.values))
+            rospy.loginfo("  Parameters:")
+            for key, val in zip(self.dParams.keys(), ind):
+                rospy.loginfo("    {}: {}".format(key, val))
+            rospy.loginfo("-----------------------------")
+            
+        rospy.loginfo("PARAMS VALIDATION FOR 30 TRIALS WITH FIRST PARETO FRONT ELEMENT")
+        rospy.loginfo(hof[0])
         self.iActualCycle = 0
         for _ in range(30):
             self.target_function(individual = hof[0])
